@@ -1,24 +1,43 @@
 ---
+// ✅ AUTH (Pam): guard + get username from session
 import Layout from "../layouts/Layout.astro";
+
+const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
+
+const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
+  headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
+});
+
+if (!meRes.ok) {
+  return Astro.redirect("/login");
+}
+
+const { username } = await meRes.json();
+// ✅ END AUTH
 ---
 
 <Layout title="Chat">
   <main class="mx-auto flex h-screen max-w-4xl flex-col p-4">
+
+    <!-- ✅ AUTH (Pam): top bar with logged-in user + logout -->
+    <header class="flex items-center justify-between border-b border-black pb-3 mb-4">
+      <span class="text-sm text-gray-500">
+        Signed in as <strong class="text-black">{username}</strong>
+      </span>
+      <button
+        id="logout-btn"
+        class="border border-black px-3 py-1 text-sm hover:bg-black hover:text-white"
+      >
+        Sign out
+      </button>
+    </header>
+    <!-- ✅ END AUTH -->
+
     <!-- Join screen -->
     <section id="join-screen" class="m-auto w-full max-w-sm">
       <h1 class="mb-6 text-2xl font-bold">Real-Time Chat</h1>
       <form id="join-form" class="flex flex-col gap-3">
-        <label for="username" class="text-sm">Guest name</label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          required
-          maxlength="20"
-          autocomplete="off"
-          placeholder="Enter your name"
-          class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
-        />
+        <!-- ✅ AUTH (Pam): username input removed — provided by session via window.__USERNAME__ -->
         <label for="room-name" class="text-sm">Room name</label>
         <input
           id="room-name"
@@ -83,6 +102,24 @@ import Layout from "../layouts/Layout.astro";
     </section>
   </main>
 </Layout>
+
+<!-- ✅ AUTH (Pam): exposes session username to chat.ts -->
+<script define:vars={{ username }}>
+  window.__USERNAME__ = username;
+</script>
+<!-- ✅ END AUTH -->
+
+<script>
+  // ✅ AUTH (Pam): logout handler
+  const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
+  document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    await fetch(`${SERVER_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    window.location.href = "/login";
+  });
+</script>
 
 <script>
   import "../scripts/chat";
