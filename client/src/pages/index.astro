@@ -19,11 +19,27 @@ import Layout from "../layouts/Layout.astro";
           placeholder="Enter your name"
           class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
         />
+        <label for="room-name" class="text-sm">Room name</label>
+        <input
+          id="room-name"
+          name="room"
+          type="text"
+          required
+          maxlength="30"
+          autocomplete="off"
+          value="General"
+          placeholder="Enter or create a room"
+          class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
+        />
+        <div>
+          <p class="mb-2 text-sm">Available rooms</p>
+          <ul id="room-list" class="flex flex-wrap gap-2 text-sm"></ul>
+        </div>
         <button
           type="submit"
           class="border border-black bg-black px-3 py-2 text-white hover:bg-white hover:text-black"
         >
-          Join Room
+          Join or Create Room
         </button>
       </form>
     </section>
@@ -33,7 +49,7 @@ import Layout from "../layouts/Layout.astro";
       <div class="flex h-full min-h-0 flex-col gap-4 md:flex-row">
         <section class="flex min-h-0 flex-1 flex-col">
           <header class="border-b border-black pb-2">
-            <h1 class="text-xl font-bold">General Room</h1>
+            <h1 id="current-room" class="text-xl font-bold">General Room</h1>
             <p id="current-user" class="text-sm"></p>
           </header>
 
