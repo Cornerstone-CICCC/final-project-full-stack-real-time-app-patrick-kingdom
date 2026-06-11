@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Chat">
-  <main class="mx-auto flex h-screen max-w-2xl flex-col p-4">
+  <main class="mx-auto flex h-screen max-w-4xl flex-col p-4">
     <!-- Join screen -->
     <section id="join-screen" class="m-auto w-full max-w-sm">
       <h1 class="mb-6 text-2xl font-bold">Real-Time Chat</h1>
@@ -29,32 +29,41 @@ import Layout from "../layouts/Layout.astro";
     </section>
 
     <!-- Chat screen -->
-    <section id="chat-screen" class="flex min-h-0 flex-1 flex-col" hidden>
-      <header class="border-b border-black pb-2">
-        <h1 class="text-xl font-bold">General Room</h1>
-        <p id="current-user" class="text-sm"></p>
-      </header>
+    <section id="chat-screen" class="min-h-0 flex-1" hidden>
+      <div class="flex h-full min-h-0 flex-col gap-4 md:flex-row">
+        <section class="flex min-h-0 flex-1 flex-col">
+          <header class="border-b border-black pb-2">
+            <h1 class="text-xl font-bold">General Room</h1>
+            <p id="current-user" class="text-sm"></p>
+          </header>
 
-      <ul id="message-list" class="flex-1 space-y-2 overflow-y-auto py-4"></ul>
+          <ul id="message-list" class="flex-1 space-y-2 overflow-y-auto py-4"></ul>
 
-      <form id="message-form" class="flex gap-2 border-t border-black pt-4">
-        <input
-          id="message-input"
-          name="message"
-          type="text"
-          required
-          maxlength="500"
-          autocomplete="off"
-          placeholder="Type a message"
-          class="flex-1 border border-black px-3 py-2 focus:outline-2 focus:outline-black"
-        />
-        <button
-          type="submit"
-          class="border border-black bg-black px-4 py-2 text-white hover:bg-white hover:text-black"
-        >
-          Send
-        </button>
-      </form>
+          <form id="message-form" class="flex gap-2 border-t border-black pt-4">
+            <input
+              id="message-input"
+              name="message"
+              type="text"
+              required
+              maxlength="500"
+              autocomplete="off"
+              placeholder="Type a message"
+              class="flex-1 border border-black px-3 py-2 focus:outline-2 focus:outline-black"
+            />
+            <button
+              type="submit"
+              class="border border-black bg-black px-4 py-2 text-white hover:bg-white hover:text-black"
+            >
+              Send
+            </button>
+          </form>
+        </section>
+
+        <aside class="border border-black p-3 md:w-56">
+          <h2 class="mb-3 font-bold">Online Users</h2>
+          <ul id="online-user-list" class="space-y-2 text-sm"></ul>
+        </aside>
+      </div>
     </section>
   </main>
 </Layout>

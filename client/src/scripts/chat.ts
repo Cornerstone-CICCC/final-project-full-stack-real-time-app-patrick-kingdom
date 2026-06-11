@@ -18,6 +18,7 @@ const currentUser = document.getElementById("current-user") as HTMLElement;
 const messageList = document.getElementById("message-list") as HTMLUListElement;
 const messageForm = document.getElementById("message-form") as HTMLFormElement;
 const messageInput = document.getElementById("message-input") as HTMLInputElement;
+const onlineUserList = document.getElementById("online-user-list") as HTMLUListElement;
 
 let username = "";
 const socket = io(SERVER_URL, { autoConnect: false });
@@ -40,6 +41,17 @@ function renderMessage(message: Message) {
   item.append(header, body);
   messageList.appendChild(item);
   messageList.scrollTop = messageList.scrollHeight;
+}
+
+function renderOnlineUsers(users: string[]) {
+  onlineUserList.innerHTML = "";
+
+  users.forEach((user) => {
+    const item = document.createElement("li");
+    item.className = "border border-black px-2 py-1";
+    item.textContent = user === username ? `${user} (you)` : user;
+    onlineUserList.appendChild(item);
+  });
 }
 
 async function loadHistory() {
@@ -76,6 +88,7 @@ messageForm.addEventListener("submit", (event) => {
 });
 
 socket.on("chat:message", renderMessage);
+socket.on("users:online", renderOnlineUsers);
 
 socket.on("connect_error", () => {
   currentUser.textContent = "Connection to server failed";
@@ -83,4 +96,7 @@ socket.on("connect_error", () => {
 
 socket.on("connect", () => {
   currentUser.textContent = `Joined as ${username}`;
+  if (username) {
+    socket.emit("chat:join", { username });
+  }
 });
