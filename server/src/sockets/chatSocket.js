@@ -1,4 +1,4 @@
-import { addMessage } from "../models/messageModel.js";
+import { addMessage, removeMessage } from "../models/messageModel.js";
 import { getOrCreateRoom, getRooms } from "../models/roomModel.js";
 
 const MAX_TEXT_LENGTH = 500;
@@ -72,6 +72,23 @@ export function registerChatHandlers(io) {
       });
 
       io.to(user.roomId).emit("chat:message", message);
+    });
+
+    socket.on("chat:unsend", (payload) => {
+      if (!payload || typeof payload.messageId !== "string") return;
+
+      const user = onlineUsers.get(socket.id);
+      if (!user) return;
+
+      const removed = removeMessage({
+        roomId: user.roomId,
+        messageId: payload.messageId,
+        username: user.username,
+      });
+
+      if (removed) {
+        io.to(user.roomId).emit("chat:unsent", { messageId: payload.messageId });
+      }
     });
 
     socket.emit("rooms:list", getRooms());

@@ -34,16 +34,61 @@ let username = "";
 let activeRoom: Room | null = null;
 const socket = io(SERVER_URL, { autoConnect: false });
 
+// Messages hidden only on this screen (survives history reloads in this session)
+const locallyDeletedIds = new Set<string>();
+
+function removeMessageElement(messageId: string) {
+  messageList.querySelector(`[data-message-id="${messageId}"]`)?.remove();
+}
+
+function createActionButton(label: string, onClick: () => void) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "text-xs text-gray-600 underline hover:text-black";
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
 function renderMessage(message: Message) {
+  if (locallyDeletedIds.has(message.id)) return;
+
   const item = document.createElement("li");
+  item.dataset.messageId = message.id;
+
   const time = new Date(message.createdAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  const header = document.createElement("p");
-  header.className = "text-xs text-gray-600";
-  header.textContent = `${message.username} · ${time}`;
+  const header = document.createElement("div");
+  header.className = "flex items-center gap-3";
+
+  const meta = document.createElement("p");
+  meta.className = "text-xs text-gray-600";
+  meta.textContent = `${message.username} · ${time}`;
+  header.appendChild(meta);
+
+  header.appendChild(
+    createActionButton("Copy", () => {
+      navigator.clipboard.writeText(message.text);
+    })
+  );
+
+  header.appendChild(
+    createActionButton("Delete", () => {
+      locallyDeletedIds.add(message.id);
+      removeMessageElement(message.id);
+    })
+  );
+
+  if (message.username === username) {
+    header.appendChild(
+      createActionButton("Unsend", () => {
+        socket.emit("chat:unsend", { messageId: message.id });
+      })
+    );
+  }
 
   const body = document.createElement("p");
   body.className = "border border-black px-3 py-2";
@@ -123,6 +168,9 @@ messageForm.addEventListener("submit", (event) => {
 });
 
 socket.on("chat:message", renderMessage);
+socket.on("chat:unsent", ({ messageId }: { messageId: string }) => {
+  removeMessageElement(messageId);
+});
 socket.on("chat:joined", (room: Room) => {
   activeRoom = room;
   currentRoom.textContent = `${room.name} Room`;
