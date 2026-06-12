@@ -48,9 +48,18 @@ import Layout from "../layouts/Layout.astro";
     <section id="chat-screen" class="min-h-0 flex-1" hidden>
       <div class="flex h-full min-h-0 flex-col gap-4 md:flex-row">
         <section class="flex min-h-0 flex-1 flex-col">
-          <header class="border-b border-black pb-2">
-            <h1 id="current-room" class="text-xl font-bold">General Room</h1>
-            <p id="current-user" class="text-sm"></p>
+          <header class="flex items-start justify-between border-b border-black pb-2">
+            <div>
+              <h1 id="current-room" class="text-xl font-bold">General Room</h1>
+              <p id="current-user" class="text-sm"></p>
+            </div>
+            <button
+              id="leave-button"
+              type="button"
+              class="border border-black px-3 py-1 text-sm hover:bg-black hover:text-white"
+            >
+              Leave
+            </button>
           </header>
 
           <ul id="message-list" class="flex-1 space-y-2 overflow-y-auto py-4"></ul>
