@@ -17,6 +17,15 @@ function emitOnlineUsers(io, roomId) {
   io.to(roomId).emit("users:online", getOnlineUsers(roomId));
 }
 
+// System notices are broadcast only, not stored in message history
+function emitNotice(io, roomId, text) {
+  io.to(roomId).emit("chat:notice", {
+    id: crypto.randomUUID(),
+    text,
+    createdAt: new Date().toISOString(),
+  });
+}
+
 function isValidUsername(username) {
   return (
     typeof username === "string" &&
@@ -46,6 +55,7 @@ export function registerChatHandlers(io) {
       if (previousUser) {
         socket.leave(previousUser.roomId);
         emitOnlineUsers(io, previousUser.roomId);
+        emitNotice(io, previousUser.roomId, `${previousUser.username} left`);
       }
 
       socket.join(room.id);
@@ -57,6 +67,7 @@ export function registerChatHandlers(io) {
       io.emit("rooms:list", getRooms());
       socket.emit("chat:joined", room);
       emitOnlineUsers(io, room.id);
+      emitNotice(io, room.id, `${payload.username.trim()} joined`);
     });
 
     socket.on("chat:send", (payload) => {
@@ -91,12 +102,25 @@ export function registerChatHandlers(io) {
       }
     });
 
+    socket.on("chat:leave", () => {
+      const user = onlineUsers.get(socket.id);
+      if (!user) return;
+
+      socket.leave(user.roomId);
+      onlineUsers.delete(socket.id);
+      emitOnlineUsers(io, user.roomId);
+      emitNotice(io, user.roomId, `${user.username} left`);
+    });
+
     socket.emit("rooms:list", getRooms());
 
     socket.on("disconnect", () => {
       const user = onlineUsers.get(socket.id);
       onlineUsers.delete(socket.id);
-      if (user) emitOnlineUsers(io, user.roomId);
+      if (user) {
+        emitOnlineUsers(io, user.roomId);
+        emitNotice(io, user.roomId, `${user.username} left`);
+      }
     });
   });
 }

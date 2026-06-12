@@ -14,6 +14,12 @@ interface Room {
   createdAt: string;
 }
 
+interface Notice {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 const joinScreen = document.getElementById("join-screen") as HTMLElement;
@@ -29,6 +35,7 @@ const messageList = document.getElementById("message-list") as HTMLUListElement;
 const messageForm = document.getElementById("message-form") as HTMLFormElement;
 const messageInput = document.getElementById("message-input") as HTMLInputElement;
 const onlineUserList = document.getElementById("online-user-list") as HTMLUListElement;
+const leaveButton = document.getElementById("leave-button") as HTMLButtonElement;
 
 let username = "";
 let activeRoom: Room | null = null;
@@ -99,6 +106,14 @@ function renderMessage(message: Message) {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
+function renderNotice(notice: Notice) {
+  const item = document.createElement("li");
+  item.className = "py-1 text-center text-xs text-gray-600";
+  item.textContent = notice.text;
+  messageList.appendChild(item);
+  messageList.scrollTop = messageList.scrollHeight;
+}
+
 function renderOnlineUsers(users: string[]) {
   onlineUserList.innerHTML = "";
 
@@ -158,6 +173,20 @@ joinForm.addEventListener("submit", (event) => {
   socket.emit("chat:join", { username, roomName });
 });
 
+leaveButton.addEventListener("click", () => {
+  socket.emit("chat:leave");
+
+  // Reset username so a reconnect does not auto-rejoin the room
+  username = "";
+  activeRoom = null;
+  messageList.innerHTML = "";
+  onlineUserList.innerHTML = "";
+
+  chatScreen.hidden = true;
+  joinScreen.hidden = false;
+  usernameInput.focus();
+});
+
 messageForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const text = messageInput.value.trim();
@@ -168,6 +197,7 @@ messageForm.addEventListener("submit", (event) => {
 });
 
 socket.on("chat:message", renderMessage);
+socket.on("chat:notice", renderNotice);
 socket.on("chat:unsent", ({ messageId }: { messageId: string }) => {
   removeMessageElement(messageId);
 });
