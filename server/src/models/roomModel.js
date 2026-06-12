@@ -1,11 +1,12 @@
 const MAX_ROOM_NAME_LENGTH = 30;
-const DEFAULT_ROOM = {
-  id: "general",
-  name: "General",
-  createdAt: new Date().toISOString(),
-};
 
-const rooms = new Map([[DEFAULT_ROOM.id, DEFAULT_ROOM]]);
+// Built-in rooms that always exist, even after a server restart
+const DEFAULT_ROOMS = [
+  { id: "general", name: "General", createdAt: new Date().toISOString() },
+  { id: "random", name: "Random", createdAt: new Date().toISOString() },
+];
+
+const rooms = new Map(DEFAULT_ROOMS.map((room) => [room.id, room]));
 
 function normalizeRoomName(name) {
   return name.trim().replace(/\s+/g, " ");
@@ -29,7 +30,7 @@ export function getRooms() {
 }
 
 export function getRoom(roomId) {
-  return rooms.get(roomId) ?? DEFAULT_ROOM;
+  return rooms.get(roomId) ?? DEFAULT_ROOMS[0];
 }
 
 export function getOrCreateRoom(name) {
