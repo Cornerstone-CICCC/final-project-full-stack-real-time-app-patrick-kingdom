@@ -148,7 +148,9 @@ async function loadHistory() {
 
   try {
     const params = new URLSearchParams({ roomId: activeRoom.id });
-    const res = await fetch(`${SERVER_URL}/api/messages?${params}`);
+    const res = await fetch(`${SERVER_URL}/api/messages?${params}`, {
+      credentials: "include",
+    });
     const messages: Message[] = await res.json();
     messageList.innerHTML = "";
     messages.forEach(renderMessage);
@@ -159,7 +161,8 @@ async function loadHistory() {
 
 joinForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  username = usernameInput.value.trim();
+  // Line below changed from: username = usernameInput.value.trim(); 
+  username = (window as any).__USERNAME__;
   const roomName = roomNameInput.value.trim();
   if (!username || !roomName) return;
 
