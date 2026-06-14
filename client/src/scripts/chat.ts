@@ -22,7 +22,6 @@ interface Notice {
 
 declare global {
   interface Window {
-    __SESSION_USERNAME__?: string | null;
     __DEFAULT_ROOM_NAME__?: string;
     __CHAT_DESKTOP_ONLY__?: boolean;
   }
@@ -49,7 +48,6 @@ const shouldStartChat =
 const shouldConnectSocket = Boolean(roomGroupsList) || shouldStartChat;
 
 if (shouldConnectSocket) {
-  const sessionUsername = window.__SESSION_USERNAME__ ?? null;
   const requestedRoomName = new URLSearchParams(window.location.search).get("room")?.trim();
   const defaultRoomName = requestedRoomName || window.__DEFAULT_ROOM_NAME__ || "General";
   const hasChatElements =
@@ -71,7 +69,31 @@ if (shouldConnectSocket) {
     return guestName;
   }
 
-  const username = sessionUsername ?? generateGuestName();
+  function getClientId() {
+    const savedId = sessionStorage.getItem("chatClientId");
+    if (savedId) return savedId;
+
+    const clientId = crypto.randomUUID();
+    sessionStorage.setItem("chatClientId", clientId);
+    return clientId;
+  }
+
+  async function getSessionUsername() {
+    try {
+      const res = await fetch(`${SERVER_URL}/api/auth/me`, {
+        credentials: "include",
+      });
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      return typeof data.username === "string" ? data.username : null;
+    } catch {
+      return null;
+    }
+  }
+
+  let username = "";
+  const clientId = getClientId();
   let activeRoom: Room | null = null;
   let activeRoomLabel = `${defaultRoomName} Room`;
   let isVisitorsViewOpen = false;
@@ -202,7 +224,7 @@ if (shouldConnectSocket) {
     activeRoomLabel = `${defaultRoomName} Room`;
     currentRoom.textContent = activeRoomLabel;
     currentUser.textContent = `Joining as ${username}`;
-    socket.emit("chat:join", { username, roomName: defaultRoomName });
+    socket.emit("chat:join", { username, roomName: defaultRoomName, clientId });
   }
 
   function getRoomDescription(roomName: string) {
@@ -303,5 +325,8 @@ if (shouldConnectSocket) {
 
   socket.on("rooms:list", renderRoomGroups);
 
-  socket.connect();
+  getSessionUsername().then((authenticatedUsername) => {
+    username = authenticatedUsername ?? generateGuestName();
+    socket.connect();
+  });
 }

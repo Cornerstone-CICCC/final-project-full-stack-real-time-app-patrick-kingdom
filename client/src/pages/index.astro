@@ -1,18 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-
-const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
-
-let username: string | null = null;
-
-try {
-  const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
-    headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
-  });
-  username = meRes.ok ? (await meRes.json()).username : null;
-} catch {
-  username = null;
-}
 ---
 
 <Layout title="Chat">
@@ -35,20 +22,9 @@ try {
           </span>
         </button>
 
-        <nav class="hidden items-center gap-3 text-lg font-semibold lg:flex">
-          {username ? (
-            <>
-              <span class="rounded border border-white px-3 py-2">hi, {username}</span>
-              <button id="logout-btn" class="rounded border border-white bg-black px-4 py-2 text-white hover:bg-white hover:text-black">
-                logout
-              </button>
-            </>
-          ) : (
-            <>
-              <a class="rounded border border-white px-4 py-2 hover:bg-white hover:text-black" href="/login">login</a>
-              <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
-            </>
-          )}
+        <nav id="auth-nav" class="hidden items-center gap-3 text-lg font-semibold lg:flex">
+          <a class="rounded border border-white px-4 py-2 hover:bg-white hover:text-black" href="/login">login</a>
+          <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
         </nav>
       </div>
     </header>
@@ -107,7 +83,7 @@ try {
 
       <aside class="px-2 lg:px-0">
         <div>
-          <h1 class="text-5xl font-bold leading-tight lg:text-6xl">Hello, {username ?? "guest"}!</h1>
+          <h1 id="hero-greeting" class="text-5xl font-bold leading-tight lg:text-6xl">Hello, guest!</h1>
           <p class="mt-6 text-3xl leading-relaxed lg:text-2xl">
             Find a pat group that shares your interests. Make your own pat group. Get and trade Powers.
             Play a multiplayer game. Design your own animated avatar character. Send stickers with custom text.
@@ -163,21 +139,64 @@ try {
   </main>
 </Layout>
 
-<script define:vars={{ username }}>
-  window.__SESSION_USERNAME__ = username;
+<script>
   window.__DEFAULT_ROOM_NAME__ = "General";
   window.__CHAT_DESKTOP_ONLY__ = true;
 </script>
 
 <script>
   const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
-  document.getElementById("logout-btn")?.addEventListener("click", async () => {
-    await fetch(`${SERVER_URL}/api/auth/logout`, {
-      method: "POST",
+  const authNav = document.getElementById("auth-nav");
+  const heroGreeting = document.getElementById("hero-greeting");
+
+  const renderGuestNav = () => {
+    if (!authNav) return;
+
+    authNav.innerHTML = `
+      <a class="rounded border border-white px-4 py-2 hover:bg-white hover:text-black" href="/login">login</a>
+      <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
+    `;
+  };
+
+  const renderAccountNav = () => {
+    if (!authNav) return;
+
+    authNav.innerHTML = `
+      <button id="account-btn" class="rounded border border-white bg-black px-4 py-2 text-white hover:bg-white hover:text-black">
+        account
+      </button>
+    `;
+  };
+
+  const renderGreeting = (username: string | null) => {
+    if (!heroGreeting) return;
+    heroGreeting.textContent = `Hello, ${username ?? "guest"}!`;
+  };
+
+  authNav?.addEventListener("click", (event) => {
+    if ((event.target as HTMLElement).closest("#account-btn")) {
+      window.alert("Mame would implement this!");
+    }
+  });
+
+  try {
+    const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
       credentials: "include",
     });
-    window.location.href = "/";
-  });
+
+    if (meRes.ok) {
+      const data = await meRes.json();
+      const username = typeof data.username === "string" ? data.username : null;
+      renderAccountNav();
+      renderGreeting(username);
+    } else {
+      renderGuestNav();
+      renderGreeting(null);
+    }
+  } catch {
+    renderGuestNav();
+    renderGreeting(null);
+  }
 </script>
 
 <script>

@@ -34,6 +34,25 @@ function isValidUsername(username) {
   );
 }
 
+function isValidClientId(clientId) {
+  return typeof clientId === "string" && clientId.trim().length > 0 && clientId.trim().length <= 100;
+}
+
+function removePreviousClientConnections(io, socket, clientId) {
+  const affectedRoomIds = new Set();
+
+  for (const [socketId, user] of onlineUsers.entries()) {
+    if (socketId === socket.id || user.clientId !== clientId) continue;
+
+    io.sockets.sockets.get(socketId)?.leave(user.roomId);
+    onlineUsers.delete(socketId);
+    affectedRoomIds.add(user.roomId);
+    emitNotice(io, user.roomId, `${user.username} left`);
+  }
+
+  affectedRoomIds.forEach((roomId) => emitOnlineUsers(io, roomId));
+}
+
 function isValidMessage(payload) {
   return (
     payload &&
@@ -50,6 +69,7 @@ export function registerChatHandlers(io) {
 
       const room = getOrCreateRoom(payload.roomName);
       if (!room) return;
+      const clientId = isValidClientId(payload.clientId) ? payload.clientId.trim() : null;
 
       const previousUser = onlineUsers.get(socket.id);
       if (previousUser) {
@@ -58,10 +78,15 @@ export function registerChatHandlers(io) {
         emitNotice(io, previousUser.roomId, `${previousUser.username} left`);
       }
 
+      if (clientId) {
+        removePreviousClientConnections(io, socket, clientId);
+      }
+
       socket.join(room.id);
       onlineUsers.set(socket.id, {
         username: payload.username.trim(),
         roomId: room.id,
+        clientId,
       });
 
       io.emit("rooms:list", getRooms());

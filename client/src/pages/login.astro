@@ -1,19 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-
-const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
-
-// If already logged in, redirect to chat. During static builds the API may be offline.
-try {
-  const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
-    headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
-  });
-  if (meRes.ok) {
-    return Astro.redirect("/chat");
-  }
-} catch {
-  // Keep the login page renderable when the server is not running.
-}
 ---
 
 <Layout title="Login — RealChat">
@@ -77,6 +63,14 @@ try {
   const errorMsg = document.getElementById("error-msg") as HTMLParagraphElement;
   const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
 
+  fetch(`${SERVER_URL}/api/auth/me`, {
+    credentials: "include",
+  })
+    .then((res) => {
+      if (res.ok) window.location.href = "/";
+    })
+    .catch(() => {});
+
   function showError(message: string) {
     errorMsg.textContent = message;
     errorMsg.classList.remove("hidden");
@@ -117,7 +111,7 @@ try {
         return;
       }
 
-      window.location.href = "/chat";
+      window.location.href = "/";
     } catch {
       showError("Could not connect to the server. Please try again.");
     } finally {
