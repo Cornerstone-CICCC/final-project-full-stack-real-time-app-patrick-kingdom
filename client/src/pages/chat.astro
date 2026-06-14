@@ -1,0 +1,22 @@
+---
+import ChatPanel from "../components/ChatPanel.astro";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Chat Room">
+  <main class="flex h-dvh min-h-screen flex-col overflow-hidden bg-white text-black">
+    <header class="grid h-20 shrink-0 place-items-center border-b border-black bg-black px-4 text-white">
+      <a href="/" class="text-3xl font-bold leading-none">PAT</a>
+    </header>
+
+    <ChatPanel />
+  </main>
+</Layout>
+
+<script>
+  window.__DEFAULT_ROOM_NAME__ = "General";
+</script>
+
+<script>
+  import "../scripts/chat";
+</script>

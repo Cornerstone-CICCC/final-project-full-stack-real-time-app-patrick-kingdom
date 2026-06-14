@@ -1,235 +1,98 @@
 import { io } from "socket.io-client";
+import { getSessionUsername, SERVER_URL } from "./auth";
+import { bindChatSession } from "./chat/chatSession";
+import { renderRoomGroups } from "./chat/roomGroups";
 
-interface Message {
-  id: string;
-  roomId: string;
-  username: string;
-  text: string;
-  createdAt: string;
+declare global {
+  interface Window {
+    __DEFAULT_ROOM_NAME__?: string;
+    __CHAT_DESKTOP_ONLY__?: boolean;
+  }
 }
 
-interface Room {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
-interface Notice {
-  id: string;
-  text: string;
-  createdAt: string;
-}
-
-const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
-
-const joinScreen = document.getElementById("join-screen") as HTMLElement;
-const joinForm = document.getElementById("join-form") as HTMLFormElement;
-const usernameInput = document.getElementById("username-input") as HTMLInputElement | null;
-const roomNameInput = document.getElementById("room-name") as HTMLInputElement;
-const roomList = document.getElementById("room-list") as HTMLUListElement;
-
-const chatScreen = document.getElementById("chat-screen") as HTMLElement;
-const currentRoom = document.getElementById("current-room") as HTMLElement;
-const currentUser = document.getElementById("current-user") as HTMLElement;
-const messageList = document.getElementById("message-list") as HTMLUListElement;
-const messageForm = document.getElementById("message-form") as HTMLFormElement;
-const messageInput = document.getElementById("message-input") as HTMLInputElement;
-const onlineUserList = document.getElementById("online-user-list") as HTMLUListElement;
-const leaveButton = document.getElementById("leave-button") as HTMLButtonElement;
-
-const sessionUsername = (window as any).__SESSION_USERNAME__ as string | null;
+const roomGroupsList = document.getElementById("room-groups-list");
+const roomGroupsStatus = document.getElementById("room-groups-status");
+const shouldStartChat =
+  !window.__CHAT_DESKTOP_ONLY__ || window.matchMedia("(min-width: 1024px)").matches;
+const shouldConnectSocket = Boolean(roomGroupsList) || shouldStartChat;
 
 function generateGuestName() {
-  return `Guest${Math.floor(1000 + Math.random() * 9000)}`;
+  const savedName = sessionStorage.getItem("chatGuestName");
+  if (savedName) return savedName;
+
+  const guestName = `Guest${Math.floor(1000 + Math.random() * 9000)}`;
+  sessionStorage.setItem("chatGuestName", guestName);
+  return guestName;
 }
 
-if (usernameInput && !sessionUsername) {
-  usernameInput.value = generateGuestName();
+function getClientId() {
+  const savedId = sessionStorage.getItem("chatClientId");
+  if (savedId) return savedId;
+
+  const clientId = crypto.randomUUID();
+  sessionStorage.setItem("chatClientId", clientId);
+  return clientId;
 }
 
-let username = "";
-let activeRoom: Room | null = null;
-const socket = io(SERVER_URL, { autoConnect: false });
+function getChatElements() {
+  const currentRoom = document.getElementById("current-room");
+  const currentUser = document.getElementById("current-user");
+  const messageList = document.getElementById("message-list");
+  const messageForm = document.getElementById("message-form");
+  const messageInput = document.getElementById("message-input");
+  const onlineUserList = document.getElementById("online-user-list");
 
-// Messages hidden only on this screen (survives history reloads in this session)
-const locallyDeletedIds = new Set<string>();
-
-function removeMessageElement(messageId: string) {
-  messageList.querySelector(`[data-message-id="${messageId}"]`)?.remove();
-}
-
-function createActionButton(label: string, onClick: () => void) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "text-xs text-gray-600 underline hover:text-black";
-  button.textContent = label;
-  button.addEventListener("click", onClick);
-  return button;
-}
-
-function renderMessage(message: Message) {
-  if (locallyDeletedIds.has(message.id)) return;
-
-  const item = document.createElement("li");
-  item.dataset.messageId = message.id;
-
-  const time = new Date(message.createdAt).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const header = document.createElement("div");
-  header.className = "flex items-center gap-3";
-
-  const meta = document.createElement("p");
-  meta.className = "text-xs text-gray-600";
-  meta.textContent = `${message.username} · ${time}`;
-  header.appendChild(meta);
-
-  header.appendChild(
-    createActionButton("Copy", () => {
-      navigator.clipboard.writeText(message.text);
-    })
-  );
-
-  header.appendChild(
-    createActionButton("Delete", () => {
-      locallyDeletedIds.add(message.id);
-      removeMessageElement(message.id);
-    })
-  );
-
-  if (message.username === username) {
-    header.appendChild(
-      createActionButton("Unsend", () => {
-        socket.emit("chat:unsend", { messageId: message.id });
-      })
-    );
+  if (
+    !shouldStartChat ||
+    !(currentRoom instanceof HTMLElement) ||
+    !(currentUser instanceof HTMLElement) ||
+    !(messageList instanceof HTMLUListElement) ||
+    !(messageForm instanceof HTMLFormElement) ||
+    !(messageInput instanceof HTMLInputElement) ||
+    !(onlineUserList instanceof HTMLUListElement)
+  ) {
+    return null;
   }
 
-  const body = document.createElement("p");
-  body.className = "border border-black px-3 py-2";
-  body.textContent = message.text;
-
-  item.append(header, body);
-  messageList.appendChild(item);
-  messageList.scrollTop = messageList.scrollHeight;
+  return {
+    currentRoom,
+    currentUser,
+    messageList,
+    messageForm,
+    messageInput,
+    onlineUserList,
+    visitorsToggle: document.getElementById("visitors-toggle") as HTMLButtonElement | null,
+    visitorsBack: document.getElementById("visitors-back") as HTMLButtonElement | null,
+    mobileChatPanel: document.getElementById("mobile-chat-panel"),
+    visitorsPanel: document.getElementById("visitors-panel"),
+  };
 }
 
-function renderNotice(notice: Notice) {
-  const item = document.createElement("li");
-  item.className = "py-1 text-center text-xs text-gray-600";
-  item.textContent = notice.text;
-  messageList.appendChild(item);
-  messageList.scrollTop = messageList.scrollHeight;
-}
+if (shouldConnectSocket) {
+  const requestedRoomName = new URLSearchParams(window.location.search).get("room")?.trim();
+  const roomName = requestedRoomName || window.__DEFAULT_ROOM_NAME__ || "General";
+  const socket = io(SERVER_URL, { autoConnect: false });
 
-function renderOnlineUsers(users: string[]) {
-  onlineUserList.innerHTML = "";
-
-  users.forEach((user) => {
-    const item = document.createElement("li");
-    item.className = "border border-black px-2 py-1";
-    item.textContent = user === username ? `${user} (you)` : user;
-    onlineUserList.appendChild(item);
-  });
-}
-
-function renderRooms(rooms: Room[]) {
-  roomList.innerHTML = "";
-
-  rooms.forEach((room) => {
-    const item = document.createElement("li");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "border border-black px-2 py-1 hover:bg-black hover:text-white";
-    button.textContent = room.name;
-    button.addEventListener("click", () => {
-      roomNameInput.value = room.name;
-      (usernameInput ?? roomNameInput).focus();
+  if (roomGroupsList instanceof HTMLElement) {
+    socket.on("rooms:list", (rooms) => {
+      renderRoomGroups(rooms, roomGroupsList, roomGroupsStatus);
     });
-    item.appendChild(button);
-    roomList.appendChild(item);
+  }
+
+  getSessionUsername().then((authenticatedUsername) => {
+    const username = authenticatedUsername ?? generateGuestName();
+    const elements = getChatElements();
+
+    if (elements) {
+      bindChatSession({
+        socket,
+        elements,
+        username,
+        clientId: getClientId(),
+        roomName,
+      });
+    }
+
+    socket.connect();
   });
 }
-
-async function loadHistory() {
-  if (!activeRoom) return;
-
-  try {
-    const params = new URLSearchParams({ roomId: activeRoom.id });
-    const res = await fetch(`${SERVER_URL}/api/messages?${params}`, {
-      credentials: "include",
-    });
-    const messages: Message[] = await res.json();
-    messageList.innerHTML = "";
-    messages.forEach(renderMessage);
-  } catch {
-    console.error("Failed to load message history");
-  }
-}
-
-joinForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  username = sessionUsername ?? usernameInput?.value.trim() ?? "";
-  const roomName = roomNameInput.value.trim();
-  if (!username || !roomName) return;
-
-  joinScreen.hidden = true;
-  chatScreen.hidden = false;
-  currentRoom.textContent = roomName;
-  currentUser.textContent = `Joining as ${username}`;
-  messageInput.focus();
-
-  socket.connect();
-  socket.emit("chat:join", { username, roomName });
-});
-
-leaveButton.addEventListener("click", () => {
-  socket.emit("chat:leave");
-
-  // Reset username so a reconnect does not auto-rejoin the room
-  username = "";
-  activeRoom = null;
-  messageList.innerHTML = "";
-  onlineUserList.innerHTML = "";
-
-  chatScreen.hidden = true;
-  joinScreen.hidden = false;
-  (usernameInput ?? roomNameInput).focus();
-});
-
-messageForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const text = messageInput.value.trim();
-  if (!text) return;
-
-  socket.emit("chat:send", { username, text });
-  messageInput.value = "";
-});
-
-socket.on("chat:message", renderMessage);
-socket.on("chat:notice", renderNotice);
-socket.on("chat:unsent", ({ messageId }: { messageId: string }) => {
-  removeMessageElement(messageId);
-});
-socket.on("chat:joined", (room: Room) => {
-  activeRoom = room;
-  currentRoom.textContent = `${room.name} Room`;
-  currentUser.textContent = `Joined as ${username}`;
-  loadHistory();
-});
-socket.on("rooms:list", renderRooms);
-socket.on("users:online", renderOnlineUsers);
-
-socket.on("connect_error", () => {
-  currentUser.textContent = "Connection to server failed";
-});
-
-socket.on("connect", () => {
-  if (username) {
-    socket.emit("chat:join", { username, roomName: roomNameInput.value.trim() });
-  }
-});
-
-socket.connect();
