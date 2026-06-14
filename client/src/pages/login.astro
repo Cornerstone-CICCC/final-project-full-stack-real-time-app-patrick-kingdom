@@ -3,12 +3,16 @@ import Layout from "../layouts/Layout.astro";
 
 const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
-// If already logged in, redirect to chat
-const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
-  headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
-});
-if (meRes.ok) {
-  return Astro.redirect("/chat");
+// If already logged in, redirect to chat. During static builds the API may be offline.
+try {
+  const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
+    headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
+  });
+  if (meRes.ok) {
+    return Astro.redirect("/chat");
+  }
+} catch {
+  // Keep the login page renderable when the server is not running.
 }
 ---
 
@@ -16,10 +20,10 @@ if (meRes.ok) {
   <main class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center p-6">
     <div class="w-full border border-black p-8">
       <h1 class="mb-2 text-2xl font-bold">Welcome back</h1>
-      <p class="mb-6 text-sm text-gray-500">Sign in to continue to RealChat</p>
+      <p class="mb-6 text-sm text-black">Sign in to continue to RealChat</p>
 
       <!-- Error message (hidden by default) -->
-      <p id="error-msg" class="mb-4 hidden border border-red-400 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
+      <p id="error-msg" class="mb-4 hidden border border-black bg-white px-3 py-2 text-sm text-black"></p>
 
       <form id="login-form" class="flex flex-col gap-4" novalidate>
         <div class="flex flex-col gap-1">
@@ -58,7 +62,7 @@ if (meRes.ok) {
         </button>
       </form>
 
-      <p class="mt-6 text-center text-sm text-gray-500">
+      <p class="mt-6 text-center text-sm text-black">
         Don't have an account?
         <a href="/register" class="font-medium text-black underline hover:no-underline">Register</a>
       </p>

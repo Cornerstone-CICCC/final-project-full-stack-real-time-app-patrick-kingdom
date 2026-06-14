@@ -1,152 +1,191 @@
 ---
-// Guest access: try to get a session username, but don't require one
 import Layout from "../layouts/Layout.astro";
 
 const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
-const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
-  headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
-});
+let username: string | null = null;
 
-const username = meRes.ok ? (await meRes.json()).username : null;
+try {
+  const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
+    headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
+  });
+  username = meRes.ok ? (await meRes.json()).username : null;
+} catch {
+  username = null;
+}
 ---
 
 <Layout title="Chat">
-  <main class="mx-auto flex h-screen max-w-4xl flex-col p-4">
+  <main class="min-h-screen bg-white text-black">
+    <header class="border-b border-black bg-black px-5 py-6 text-white sm:px-8 lg:px-10">
+      <div class="mx-auto flex max-w-7xl items-center justify-between">
+        <a href="/" class="flex items-center">
+          <span class="text-3xl font-bold leading-none sm:text-4xl">PAT</span>
+        </a>
 
-    <!-- Top bar: shows logged-in user, or guest with sign-in link -->
-    <header class="flex items-center justify-between border-b border-black pb-3 mb-4">
-      <span class="text-lg font-bold">PAT</span>
-      {username ? (
-        <>
-          <span class="text-sm text-gray-500">
-            Signed in as <strong class="text-black">{username}</strong>
+        <button
+          class="grid size-20 place-items-center rounded-md border border-white text-white lg:hidden"
+          type="button"
+          aria-label="Open menu"
+        >
+          <span class="flex flex-col gap-2">
+            <span class="block h-1 w-10 rounded bg-white"></span>
+            <span class="block h-1 w-10 rounded bg-white"></span>
+            <span class="block h-1 w-10 rounded bg-white"></span>
           </span>
-          <button
-            id="logout-btn"
-            class="border border-black px-3 py-1 text-sm hover:bg-black hover:text-white"
-          >
-            Sign out
-          </button>
-        </>
-      ) : (
-        <>
-          <span class="text-sm text-gray-500">Browsing as guest</span>
-          <nav class="flex gap-3 text-sm">
-            <a href="/login" class="underline hover:no-underline">Sign in</a>
-            <a href="/register" class="underline hover:no-underline">Register</a>
-          </nav>
-        </>
-      )}
+        </button>
+
+        <nav class="hidden items-center gap-3 text-lg font-semibold lg:flex">
+          {username ? (
+            <>
+              <span class="rounded border border-white px-3 py-2">hi, {username}</span>
+              <button id="logout-btn" class="rounded border border-white bg-black px-4 py-2 text-white hover:bg-white hover:text-black">
+                logout
+              </button>
+            </>
+          ) : (
+            <>
+              <a class="rounded border border-white px-4 py-2 hover:bg-white hover:text-black" href="/login">login</a>
+              <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
+            </>
+          )}
+        </nav>
+      </div>
     </header>
 
-    <!-- Join screen -->
-    <section id="join-screen" class="m-auto w-full max-w-sm">
-      <h1 class="mb-6 text-2xl font-bold">Real-Time Chat</h1>
-      <form id="join-form" class="flex flex-col gap-3">
-        {!username && (
-          <>
-            <label for="username-input" class="text-sm">Display name</label>
-            <input
-              id="username-input"
-              name="username"
-              type="text"
-              required
-              maxlength="20"
-              autocomplete="off"
-              placeholder="Enter a display name"
-              class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
-            />
-          </>
-        )}
-        <label for="room-name" class="text-sm">Room name</label>
-        <input
-          id="room-name"
-          name="room"
-          type="text"
-          required
-          maxlength="30"
-          autocomplete="off"
-          value="General"
-          placeholder="Enter or create a room"
-          class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
-        />
-        <div>
-          <p class="mb-2 text-sm">Available rooms</p>
-          <ul id="room-list" class="flex flex-wrap gap-2 text-sm"></ul>
-        </div>
-        <button
-          type="submit"
-          class="border border-black bg-black px-3 py-2 text-white hover:bg-white hover:text-black"
+    <section class="mx-auto grid max-w-7xl gap-10 px-6 py-12 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] lg:items-center">
+      <div>
+        <div
+          class="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-sm border border-black bg-white text-black"
         >
-          Join or Create Room
-        </button>
-      </form>
+            <a href="/chat" class="absolute inset-0 z-20 lg:hidden" aria-label="Open Chat room"></a>
+            <div class="absolute inset-4 border border-black lg:hidden"></div>
+            <div id="desktop-chat" class="relative hidden h-full w-full lg:block">
+              <section id="chat-screen" class="flex h-full min-h-0 flex-col">
+                <div class="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_220px] gap-3 p-4">
+                  <section class="flex min-h-0 flex-col rounded border border-black bg-white text-black">
+                    <header class="flex items-start justify-between border-b border-black px-4 py-3">
+                      <div>
+                        <h1 id="current-room" class="text-lg font-bold">General Room</h1>
+                        <p id="current-user" class="text-sm"></p>
+                      </div>
+                      <button id="leave-button" type="button" class="hidden"></button>
+                    </header>
+                    <ul id="message-list" class="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3 text-sm"></ul>
+                    <form id="message-form" class="flex gap-2 border-t border-black p-3">
+                      <input
+                        id="message-input"
+                        name="message"
+                        type="text"
+                        required
+                        maxlength="500"
+                        autocomplete="off"
+                        placeholder="Type a message"
+                        class="min-w-0 flex-1 rounded border border-black bg-white px-3 py-2 text-black focus:outline-2 focus:outline-black"
+                      />
+                      <button type="submit" class="rounded border border-black bg-black px-4 py-2 text-white hover:bg-white hover:text-black">
+                        Send
+                      </button>
+                    </form>
+                  </section>
+                  <aside class="flex min-h-0 flex-col rounded border border-black bg-white p-3 text-black">
+                    <h2 class="rounded-full border border-black bg-black py-1 text-center font-bold text-white">Chat</h2>
+                    <ul id="online-user-list" class="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto text-sm"></ul>
+                    <a href="/chat" class="mt-3 rounded-full border border-black bg-black py-2 text-center font-bold text-white hover:bg-white hover:text-black">
+                      Open Chat
+                    </a>
+                  </aside>
+                </div>
+              </section>
+            </div>
+            <span class="relative flex items-center gap-4 text-3xl font-medium lg:hidden">
+              <span>★</span>
+              Chat
+            </span>
+        </div>
+      </div>
+
+      <aside class="px-2 lg:px-0">
+        <div>
+          <h1 class="text-5xl font-bold leading-tight lg:text-6xl">Hello, {username ?? "guest"}!</h1>
+          <p class="mt-6 text-3xl leading-relaxed lg:text-2xl">
+            Find a xat group that shares your interests. Make your own xat group. Get and trade Powers.
+            Play a multiplayer game. Design your own animated avatar character. Send stickers with custom text.
+          </p>
+        </div>
+      </aside>
     </section>
 
-    <!-- Chat screen -->
-    <section id="chat-screen" class="min-h-0 flex-1" hidden>
-      <div class="flex h-full min-h-0 flex-col gap-4 md:flex-row">
-        <section class="flex min-h-0 flex-1 flex-col">
-          <header class="flex items-start justify-between border-b border-black pb-2">
-            <div>
-              <h1 id="current-room" class="text-xl font-bold">General Room</h1>
-              <p id="current-user" class="text-sm"></p>
-            </div>
-            <button
-              id="leave-button"
-              type="button"
-              class="border border-black px-3 py-1 text-sm hover:bg-black hover:text-white"
-            >
-              Leave
-            </button>
-          </header>
+    <section class="mx-auto w-full max-w-7xl px-6 pb-16 sm:px-10 lg:pb-20">
+      <div class="mb-8 flex flex-col gap-3 border-b border-black pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-normal">Rooms</p>
+          <h2 class="mt-1 text-4xl font-bold leading-tight sm:text-5xl">xat groups</h2>
+        </div>
+        <p id="room-groups-status" class="text-base text-black">Open a room and start chatting.</p>
+      </div>
 
-          <ul id="message-list" class="flex-1 space-y-2 overflow-y-auto py-4"></ul>
+      <div
+        id="room-groups-list"
+        class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        aria-live="polite"
+      >
+        <a
+          href="/chat?room=General"
+          class="group flex min-h-[360px] flex-col overflow-hidden rounded border border-black bg-white text-black hover:bg-black hover:text-white"
+        >
+          <div class="border-b border-black bg-white px-4 py-3 text-center text-xl font-bold text-black group-hover:bg-black group-hover:text-white">
+            General
+          </div>
+          <div class="grid aspect-[16/10] place-items-center border-b border-black bg-white text-black group-hover:bg-black group-hover:text-white">
+            <span class="text-6xl font-bold">G</span>
+          </div>
+          <div class="flex flex-1 items-center justify-center px-5 py-8 text-center text-xl leading-relaxed">
+            Talk with everyone in the main chat room.
+          </div>
+          <div class="flex items-center justify-between border-t border-black px-4 py-3 text-sm font-semibold">
+            <span>Live chat</span>
+            <span aria-hidden="true">group</span>
+          </div>
+        </a>
 
-          <form id="message-form" class="flex gap-2 border-t border-black pt-4">
-            <input
-              id="message-input"
-              name="message"
-              type="text"
-              required
-              maxlength="500"
-              autocomplete="off"
-              placeholder="Type a message"
-              class="flex-1 border border-black px-3 py-2 focus:outline-2 focus:outline-black"
-            />
-            <button
-              type="submit"
-              class="border border-black bg-black px-4 py-2 text-white hover:bg-white hover:text-black"
-            >
-              Send
-            </button>
-          </form>
-        </section>
-
-        <aside class="border border-black p-3 md:w-56">
-          <h2 class="mb-3 font-bold">Online Users</h2>
-          <ul id="online-user-list" class="space-y-2 text-sm"></ul>
-        </aside>
+        <a
+          href="/chat?room=Random"
+          class="group flex min-h-[360px] flex-col overflow-hidden rounded border border-black bg-white text-black hover:bg-black hover:text-white"
+        >
+          <div class="border-b border-black bg-white px-4 py-3 text-center text-xl font-bold text-black group-hover:bg-black group-hover:text-white">
+            Random
+          </div>
+          <div class="grid aspect-[16/10] place-items-center border-b border-black bg-white text-black group-hover:bg-black group-hover:text-white">
+            <span class="text-6xl font-bold">R</span>
+          </div>
+          <div class="flex flex-1 items-center justify-center px-5 py-8 text-center text-xl leading-relaxed">
+            Drop into a casual room for open conversation.
+          </div>
+          <div class="flex items-center justify-between border-t border-black px-4 py-3 text-sm font-semibold">
+            <span>Live chat</span>
+            <span aria-hidden="true">group</span>
+          </div>
+        </a>
       </div>
     </section>
   </main>
 </Layout>
 
-<!-- Exposes session username (or null for guests) to chat.ts -->
 <script define:vars={{ username }}>
   window.__SESSION_USERNAME__ = username;
+  window.__DEFAULT_ROOM_NAME__ = "General";
+  window.__CHAT_DESKTOP_ONLY__ = true;
 </script>
 
 <script>
-  // Logout handler (only present when logged in)
   const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
   document.getElementById("logout-btn")?.addEventListener("click", async () => {
     await fetch(`${SERVER_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
-    window.location.href = "/login";
+    window.location.href = "/";
   });
 </script>
 

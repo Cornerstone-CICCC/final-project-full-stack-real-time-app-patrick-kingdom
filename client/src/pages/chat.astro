@@ -1,0 +1,93 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
+
+let username: string | null = null;
+
+try {
+  const meRes = await fetch(`${SERVER_URL}/api/auth/me`, {
+    headers: { cookie: Astro.request.headers.get("cookie") ?? "" },
+  });
+  username = meRes.ok ? (await meRes.json()).username : null;
+} catch {
+  username = null;
+}
+---
+
+<Layout title="Chat Room">
+  <main class="flex min-h-screen flex-col bg-white text-black">
+    <header class="border-b border-black bg-black px-4 py-4 text-white sm:px-6">
+      <div class="mx-auto flex max-w-6xl items-center justify-between">
+        <a href="/" class="flex items-center">
+          <span class="text-2xl font-bold leading-none sm:text-3xl">PAT</span>
+        </a>
+        <nav class="flex items-center gap-3 text-sm font-semibold sm:text-base">
+          {username ? (
+            <button id="logout-btn" class="rounded border border-white bg-black px-3 py-2 hover:bg-white hover:text-black">logout</button>
+          ) : (
+            <>
+              <a href="/login" class="rounded border border-white px-3 py-2 hover:bg-white hover:text-black">login</a>
+              <a href="/register" class="rounded border border-white bg-white px-3 py-2 text-black hover:bg-black hover:text-white">register</a>
+            </>
+          )}
+        </nav>
+      </div>
+    </header>
+
+    <section id="chat-screen" class="mx-auto flex w-full max-w-6xl flex-1 flex-col p-4 sm:p-6">
+      <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <section class="flex min-h-[70vh] flex-col rounded-md border border-black bg-white">
+          <header class="flex items-start justify-between border-b border-black px-4 py-3">
+            <div>
+              <h1 id="current-room" class="text-2xl font-bold">General Room</h1>
+              <p id="current-user" class="text-sm text-black"></p>
+            </div>
+            <button id="leave-button" type="button" class="hidden"></button>
+          </header>
+          <ul id="message-list" class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4"></ul>
+          <form id="message-form" class="flex gap-2 border-t border-black p-4">
+            <input
+              id="message-input"
+              name="message"
+              type="text"
+              required
+              maxlength="500"
+              autocomplete="off"
+              placeholder="Type a message"
+              class="min-w-0 flex-1 rounded border border-black bg-white px-3 py-3 text-black focus:outline-2 focus:outline-black"
+            />
+            <button type="submit" class="rounded border border-black bg-black px-5 py-3 font-semibold text-white hover:bg-white hover:text-black">
+              Send
+            </button>
+          </form>
+        </section>
+
+        <aside class="rounded-md border border-black bg-white p-4">
+          <h2 class="mb-3 rounded-full border border-black bg-black py-2 text-center font-bold text-white">Chat</h2>
+          <ul id="online-user-list" class="space-y-2 text-sm"></ul>
+        </aside>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<script define:vars={{ username }}>
+  window.__SESSION_USERNAME__ = username;
+  window.__DEFAULT_ROOM_NAME__ = "General";
+</script>
+
+<script>
+  const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
+  document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    await fetch(`${SERVER_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    window.location.href = "/";
+  });
+</script>
+
+<script>
+  import "../scripts/chat";
+</script>
