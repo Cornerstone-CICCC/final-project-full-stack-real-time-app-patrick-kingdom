@@ -16,37 +16,45 @@ try {
 ---
 
 <Layout title="Chat Room">
-  <main class="flex min-h-screen flex-col bg-white text-black">
-    <header class="border-b border-black bg-black px-4 py-4 text-white sm:px-6">
-      <div class="mx-auto flex max-w-6xl items-center justify-between">
-        <a href="/" class="flex items-center">
-          <span class="text-2xl font-bold leading-none sm:text-3xl">PAT</span>
-        </a>
-        <nav class="flex items-center gap-3 text-sm font-semibold sm:text-base">
-          {username ? (
-            <button id="logout-btn" class="rounded border border-white bg-black px-3 py-2 hover:bg-white hover:text-black">logout</button>
-          ) : (
-            <>
-              <a href="/login" class="rounded border border-white px-3 py-2 hover:bg-white hover:text-black">login</a>
-              <a href="/register" class="rounded border border-white bg-white px-3 py-2 text-black hover:bg-black hover:text-white">register</a>
-            </>
-          )}
-        </nav>
-      </div>
+  <main class="flex h-dvh min-h-screen flex-col overflow-hidden bg-white text-black">
+    <header class="grid h-20 shrink-0 place-items-center border-b border-black bg-black px-4 text-white">
+      <a href="/" class="text-3xl font-bold leading-none">PAT</a>
     </header>
 
-    <section id="chat-screen" class="mx-auto flex w-full max-w-6xl flex-1 flex-col p-4 sm:p-6">
-      <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-        <section class="flex min-h-[70vh] flex-col rounded-md border border-black bg-white">
-          <header class="flex items-start justify-between border-b border-black px-4 py-3">
-            <div>
-              <h1 id="current-room" class="text-2xl font-bold">General Room</h1>
-              <p id="current-user" class="text-sm text-black"></p>
-            </div>
-            <button id="leave-button" type="button" class="hidden"></button>
-          </header>
+    <section id="chat-screen" class="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
+      <header class="relative flex h-14 shrink-0 items-center border-b border-black bg-white">
+        <button
+          id="visitors-back"
+          type="button"
+          class="absolute left-0 top-0 hidden size-14 place-items-center border-r border-black text-3xl font-bold hover:bg-gray-100 lg:hidden"
+          aria-label="Back to chat"
+        >
+          <span aria-hidden="true">&lt;</span>
+        </button>
+        <h1 id="current-room" class="min-w-0 flex-1 truncate px-16 text-center text-xl font-bold lg:px-4 lg:text-left">General Room</h1>
+        <button
+          id="visitors-toggle"
+          type="button"
+          class="absolute right-0 top-0 grid size-14 place-items-center border-l border-black text-2xl font-bold hover:bg-gray-100 lg:hidden"
+          aria-label="Show current users"
+          aria-pressed="false"
+        >
+          <span class="relative block h-7 w-8" aria-hidden="true">
+            <span class="absolute left-1 top-1 block size-3 rounded-full bg-black"></span>
+            <span class="absolute right-1 top-1 block size-3 rounded-full bg-black"></span>
+            <span class="absolute bottom-1 left-0 block h-3 w-4 rounded-t-full border-2 border-black"></span>
+            <span class="absolute bottom-1 right-0 block h-3 w-4 rounded-t-full border-2 border-black"></span>
+          </span>
+        </button>
+      </header>
+
+      <p id="current-user" class="sr-only"></p>
+      <button id="leave-button" type="button" class="hidden"></button>
+
+      <div class="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <section id="mobile-chat-panel" class="flex min-h-0 flex-col bg-white">
           <ul id="message-list" class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4"></ul>
-          <form id="message-form" class="flex gap-2 border-t border-black p-4">
+          <form id="message-form" class="grid h-20 shrink-0 grid-cols-[minmax(0,1fr)_80px] border-t border-black bg-gray-100">
             <input
               id="message-input"
               name="message"
@@ -55,17 +63,17 @@ try {
               maxlength="500"
               autocomplete="off"
               placeholder="Type a message"
-              class="min-w-0 flex-1 rounded border border-black bg-white px-3 py-3 text-black focus:outline-2 focus:outline-black"
+              class="min-w-0 border-0 border-r border-black bg-gray-100 px-4 text-lg text-black focus:outline-2 focus:outline-black"
             />
-            <button type="submit" class="rounded border border-black bg-black px-5 py-3 font-semibold text-white hover:bg-white hover:text-black">
+            <button type="submit" class="bg-gray-100 px-3 text-lg font-bold text-black hover:bg-black hover:text-white">
               Send
             </button>
           </form>
         </section>
 
-        <aside class="rounded-md border border-black bg-white p-4">
-          <h2 class="mb-3 rounded-full border border-black bg-black py-2 text-center font-bold text-white">Chat</h2>
-          <ul id="online-user-list" class="space-y-2 text-sm"></ul>
+        <aside id="visitors-panel" class="hidden min-h-0 overflow-y-auto bg-white lg:block lg:border-l lg:border-black">
+          <h2 class="hidden border-b border-black bg-gray-200 py-3 text-center text-lg font-bold lg:block">Chat</h2>
+          <ul id="online-user-list" class="space-y-2 p-4 text-sm"></ul>
         </aside>
       </div>
     </section>
@@ -78,8 +86,8 @@ try {
 </script>
 
 <script>
-  const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
   document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
     await fetch(`${SERVER_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",

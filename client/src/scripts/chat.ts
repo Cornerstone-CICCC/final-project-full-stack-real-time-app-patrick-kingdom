@@ -38,6 +38,10 @@ const messageForm = document.getElementById("message-form") as HTMLFormElement |
 const messageInput = document.getElementById("message-input") as HTMLInputElement | null;
 const onlineUserList = document.getElementById("online-user-list") as HTMLUListElement | null;
 const leaveButton = document.getElementById("leave-button") as HTMLButtonElement | null;
+const visitorsToggle = document.getElementById("visitors-toggle") as HTMLButtonElement | null;
+const visitorsBack = document.getElementById("visitors-back") as HTMLButtonElement | null;
+const mobileChatPanel = document.getElementById("mobile-chat-panel") as HTMLElement | null;
+const visitorsPanel = document.getElementById("visitors-panel") as HTMLElement | null;
 const roomGroupsList = document.getElementById("room-groups-list") as HTMLElement | null;
 const roomGroupsStatus = document.getElementById("room-groups-status") as HTMLElement | null;
 const shouldStartChat =
@@ -69,9 +73,26 @@ if (shouldConnectSocket) {
 
   const username = sessionUsername ?? generateGuestName();
   let activeRoom: Room | null = null;
+  let activeRoomLabel = `${defaultRoomName} Room`;
+  let isVisitorsViewOpen = false;
   const socket = io(SERVER_URL, { autoConnect: false });
 
   const locallyDeletedIds = new Set<string>();
+
+  function setVisitorsView(isOpen: boolean) {
+    if (!currentRoom || !visitorsToggle || !visitorsBack || !mobileChatPanel || !visitorsPanel) return;
+
+    isVisitorsViewOpen = isOpen;
+    visitorsToggle.setAttribute("aria-pressed", String(isOpen));
+    currentRoom.textContent = isOpen ? "Visitors" : activeRoomLabel;
+    visitorsToggle.classList.toggle("hidden", isOpen);
+    visitorsToggle.classList.toggle("grid", !isOpen);
+    visitorsBack.classList.toggle("hidden", !isOpen);
+    visitorsBack.classList.toggle("grid", isOpen);
+    mobileChatPanel.classList.toggle("hidden", isOpen);
+    visitorsPanel.classList.toggle("hidden", !isOpen);
+    visitorsPanel.classList.toggle("block", isOpen);
+  }
 
   function removeMessageElement(messageId: string) {
     messageList?.querySelector(`[data-message-id="${messageId}"]`)?.remove();
@@ -178,7 +199,8 @@ if (shouldConnectSocket) {
   function joinDefaultRoom() {
     if (!currentRoom || !currentUser) return;
 
-    currentRoom.textContent = `${defaultRoomName} Room`;
+    activeRoomLabel = `${defaultRoomName} Room`;
+    currentRoom.textContent = activeRoomLabel;
     currentUser.textContent = `Joining as ${username}`;
     socket.emit("chat:join", { username, roomName: defaultRoomName });
   }
@@ -223,18 +245,7 @@ if (shouldConnectSocket) {
         "flex flex-1 items-center justify-center px-5 py-8 text-center text-xl leading-relaxed";
       description.textContent = getRoomDescription(room.name);
 
-      const footer = document.createElement("div");
-      footer.className =
-        "flex items-center justify-between border-t border-black px-4 py-3 text-sm font-semibold";
-
-      const label = document.createElement("span");
-      label.textContent = "Live chat";
-      const kind = document.createElement("span");
-      kind.setAttribute("aria-hidden", "true");
-      kind.textContent = "group";
-      footer.append(label, kind);
-
-      card.append(title, preview, description, footer);
+      card.append(title, preview, description);
       roomGroupsList.appendChild(card);
     });
 
@@ -267,7 +278,8 @@ if (shouldConnectSocket) {
     });
     socket.on("chat:joined", (room: Room) => {
       activeRoom = room;
-      currentRoom.textContent = `${room.name} Room`;
+      activeRoomLabel = `${room.name} Room`;
+      currentRoom.textContent = isVisitorsViewOpen ? "Visitors" : activeRoomLabel;
       currentUser.textContent = `Joined as ${username}`;
       loadHistory();
     });
@@ -278,6 +290,15 @@ if (shouldConnectSocket) {
     });
 
     socket.on("connect", joinDefaultRoom);
+
+    visitorsToggle?.addEventListener("click", () => {
+      const isOpen = visitorsToggle.getAttribute("aria-pressed") !== "true";
+      setVisitorsView(isOpen);
+    });
+
+    visitorsBack?.addEventListener("click", () => {
+      setVisitorsView(false);
+    });
   }
 
   socket.on("rooms:list", renderRoomGroups);
