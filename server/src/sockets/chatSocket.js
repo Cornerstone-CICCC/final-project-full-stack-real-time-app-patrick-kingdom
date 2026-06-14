@@ -127,16 +127,6 @@ export function registerChatHandlers(io) {
       }
     });
 
-    socket.on("chat:leave", () => {
-      const user = onlineUsers.get(socket.id);
-      if (!user) return;
-
-      socket.leave(user.roomId);
-      onlineUsers.delete(socket.id);
-      emitOnlineUsers(io, user.roomId);
-      emitNotice(io, user.roomId, `${user.username} left`);
-    });
-
     socket.emit("rooms:list", getRooms());
 
     socket.on("disconnect", () => {

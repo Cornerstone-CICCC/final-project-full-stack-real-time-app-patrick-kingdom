@@ -57,19 +57,13 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <script>
-  const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
+  import { redirectAuthenticated, SERVER_URL } from "../scripts/auth";
 
   const form = document.getElementById("login-form") as HTMLFormElement;
   const errorMsg = document.getElementById("error-msg") as HTMLParagraphElement;
   const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
 
-  fetch(`${SERVER_URL}/api/auth/me`, {
-    credentials: "include",
-  })
-    .then((res) => {
-      if (res.ok) window.location.href = "/";
-    })
-    .catch(() => {});
+  redirectAuthenticated("/");
 
   function showError(message: string) {
     errorMsg.textContent = message;
