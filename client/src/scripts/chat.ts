@@ -24,7 +24,7 @@ const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 const joinScreen = document.getElementById("join-screen") as HTMLElement;
 const joinForm = document.getElementById("join-form") as HTMLFormElement;
-const usernameInput = document.getElementById("username") as HTMLInputElement;
+const usernameInput = document.getElementById("username-input") as HTMLInputElement | null;
 const roomNameInput = document.getElementById("room-name") as HTMLInputElement;
 const roomList = document.getElementById("room-list") as HTMLUListElement;
 
@@ -36,6 +36,16 @@ const messageForm = document.getElementById("message-form") as HTMLFormElement;
 const messageInput = document.getElementById("message-input") as HTMLInputElement;
 const onlineUserList = document.getElementById("online-user-list") as HTMLUListElement;
 const leaveButton = document.getElementById("leave-button") as HTMLButtonElement;
+
+const sessionUsername = (window as any).__SESSION_USERNAME__ as string | null;
+
+function generateGuestName() {
+  return `Guest${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+if (usernameInput && !sessionUsername) {
+  usernameInput.value = generateGuestName();
+}
 
 let username = "";
 let activeRoom: Room | null = null;
@@ -136,7 +146,7 @@ function renderRooms(rooms: Room[]) {
     button.textContent = room.name;
     button.addEventListener("click", () => {
       roomNameInput.value = room.name;
-      usernameInput.focus();
+      (usernameInput ?? roomNameInput).focus();
     });
     item.appendChild(button);
     roomList.appendChild(item);
@@ -161,8 +171,7 @@ async function loadHistory() {
 
 joinForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  // Line below changed from: username = usernameInput.value.trim(); 
-  username = (window as any).__USERNAME__;
+  username = sessionUsername ?? usernameInput?.value.trim() ?? "";
   const roomName = roomNameInput.value.trim();
   if (!username || !roomName) return;
 
@@ -187,7 +196,7 @@ leaveButton.addEventListener("click", () => {
 
   chatScreen.hidden = true;
   joinScreen.hidden = false;
-  usernameInput.focus();
+  (usernameInput ?? roomNameInput).focus();
 });
 
 messageForm.addEventListener("submit", (event) => {
