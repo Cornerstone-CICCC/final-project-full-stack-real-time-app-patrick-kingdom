@@ -1,11 +1,32 @@
+import type { Server, Socket } from "socket.io";
 import { addMessage, removeMessage } from "../models/messageModel.js";
 import { getOrCreateRoom, getRooms } from "../models/roomModel.js";
 
 const MAX_TEXT_LENGTH = 500;
 const MAX_NAME_LENGTH = 20;
-const onlineUsers = new Map();
+type OnlineUser = {
+  username: string;
+  roomId: string;
+  clientId: string | null;
+};
 
-function getOnlineUsers(roomId) {
+type JoinPayload = {
+  username?: unknown;
+  roomName?: unknown;
+  clientId?: unknown;
+};
+
+type SendPayload = {
+  text?: unknown;
+};
+
+type UnsendPayload = {
+  messageId?: unknown;
+};
+
+const onlineUsers = new Map<string, OnlineUser>();
+
+function getOnlineUsers(roomId: string): string[] {
   const users = [...onlineUsers.values()]
     .filter((user) => user.roomId === roomId)
     .map((user) => user.username);
@@ -13,12 +34,12 @@ function getOnlineUsers(roomId) {
   return [...new Set(users)].sort((a, b) => a.localeCompare(b));
 }
 
-function emitOnlineUsers(io, roomId) {
+function emitOnlineUsers(io: Server, roomId: string): void {
   io.to(roomId).emit("users:online", getOnlineUsers(roomId));
 }
 
 // System notices are broadcast only, not stored in message history
-function emitNotice(io, roomId, text) {
+function emitNotice(io: Server, roomId: string, text: string): void {
   io.to(roomId).emit("chat:notice", {
     id: crypto.randomUUID(),
     text,
@@ -26,7 +47,7 @@ function emitNotice(io, roomId, text) {
   });
 }
 
-function isValidUsername(username) {
+function isValidUsername(username: unknown): username is string {
   return (
     typeof username === "string" &&
     username.trim().length > 0 &&
@@ -34,12 +55,12 @@ function isValidUsername(username) {
   );
 }
 
-function isValidClientId(clientId) {
+function isValidClientId(clientId: unknown): clientId is string {
   return typeof clientId === "string" && clientId.trim().length > 0 && clientId.trim().length <= 100;
 }
 
-function removePreviousClientConnections(io, socket, clientId) {
-  const affectedRoomIds = new Set();
+function removePreviousClientConnections(io: Server, socket: Socket, clientId: string): void {
+  const affectedRoomIds = new Set<string>();
 
   for (const [socketId, user] of onlineUsers.entries()) {
     if (socketId === socket.id || user.clientId !== clientId) continue;
@@ -53,19 +74,25 @@ function removePreviousClientConnections(io, socket, clientId) {
   affectedRoomIds.forEach((roomId) => emitOnlineUsers(io, roomId));
 }
 
-function isValidMessage(payload) {
+function isValidMessage(payload: unknown): payload is SendPayload & { text: string } {
   return (
-    payload &&
+    typeof payload === "object" &&
+    payload !== null &&
+    "text" in payload &&
     typeof payload.text === "string" &&
     payload.text.trim().length > 0 &&
     payload.text.trim().length <= MAX_TEXT_LENGTH
   );
 }
 
-export function registerChatHandlers(io) {
+function isObjectPayload(payload: unknown): payload is Record<string, unknown> {
+  return typeof payload === "object" && payload !== null;
+}
+
+export function registerChatHandlers(io: Server): void {
   io.on("connection", (socket) => {
-    socket.on("chat:join", (payload) => {
-      if (!payload || !isValidUsername(payload.username)) return;
+    socket.on("chat:join", (payload: JoinPayload) => {
+      if (!isObjectPayload(payload) || !isValidUsername(payload.username)) return;
 
       const room = getOrCreateRoom(payload.roomName);
       if (!room) return;
@@ -95,7 +122,7 @@ export function registerChatHandlers(io) {
       emitNotice(io, room.id, `${payload.username.trim()} joined`);
     });
 
-    socket.on("chat:send", (payload) => {
+    socket.on("chat:send", (payload: unknown) => {
       if (!isValidMessage(payload)) return;
 
       const user = onlineUsers.get(socket.id);
@@ -110,8 +137,8 @@ export function registerChatHandlers(io) {
       io.to(user.roomId).emit("chat:message", message);
     });
 
-    socket.on("chat:unsend", (payload) => {
-      if (!payload || typeof payload.messageId !== "string") return;
+    socket.on("chat:unsend", (payload: UnsendPayload) => {
+      if (!isObjectPayload(payload) || typeof payload.messageId !== "string") return;
 
       const user = onlineUsers.get(socket.id);
       if (!user) return;
