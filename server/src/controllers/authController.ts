@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { findUserByUsername, createUser } from '../models/userModel.js';
 
@@ -5,7 +6,12 @@ const SALT_ROUNDS = 10;
 const MAX_USERNAME_LENGTH = 20;
 const MIN_PASSWORD_LENGTH = 6;
 
-export async function register(req, res) {
+type AuthBody = {
+  username?: string;
+  password?: string;
+};
+
+export async function register(req: Request<object, object, AuthBody>, res: Response) {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
 
@@ -27,7 +33,7 @@ export async function register(req, res) {
   res.status(201).json({ username: user.username });
 }
 
-export async function login(req, res) {
+export async function login(req: Request<object, object, AuthBody>, res: Response) {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
 
@@ -50,14 +56,14 @@ export async function login(req, res) {
   res.json({ username: user.username });
 }
 
-export function logout(req, res) {
+export function logout(req: Request, res: Response) {
   req.session.destroy(() => {
     res.clearCookie('connect.sid');
     res.json({ ok: true });
   });
 }
 
-export function me(req, res) {
+export function me(req: Request, res: Response) {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
