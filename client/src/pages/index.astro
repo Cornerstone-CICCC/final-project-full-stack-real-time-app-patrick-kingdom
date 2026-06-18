@@ -84,10 +84,10 @@ import Layout from "../layouts/Layout.astro";
   import { renderHomeAuthState } from "../scripts/auth";
 
   document.getElementById("auth-nav")?.addEventListener("click", (event) => {
-    if ((event.target as HTMLElement).closest("#account-btn")) {
-      window.alert("Mame would implement this!");
-    }
-  });
+  if ((event.target as HTMLElement).closest("#account-btn")) {
+    window.location.href = "/edit-profile";
+  }
+});
 
   renderHomeAuthState();
 </script>
