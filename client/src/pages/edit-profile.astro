@@ -30,27 +30,46 @@ import Layout from "../layouts/Layout.astro";
   </main>
 
   <script is:inline>
-    const form = document.getElementById("editProfileForm");
-    const message = document.getElementById("message");
+  const form = document.getElementById("editProfileForm");
+  const message = document.getElementById("message");
 
-    const displayNameInput = document.getElementById("displayName");
-    const usernameInput = document.getElementById("username");
-    const bioInput = document.getElementById("bio");
-    const avatarInput = document.getElementById("avatar");
+  const displayNameInput = document.getElementById("displayName");
+  const usernameInput = document.getElementById("username");
+  const bioInput = document.getElementById("bio");
+  const avatarInput = document.getElementById("avatar");
 
-    const savedProfile = localStorage.getItem("profile");
+  const savedProfile = localStorage.getItem("profile");
 
-    if (savedProfile) {
-      const profile = JSON.parse(savedProfile);
+  if (savedProfile) {
+    const profile = JSON.parse(savedProfile);
 
-      displayNameInput.value = profile.displayName || "";
-      usernameInput.value = profile.username || "";
-      bioInput.value = profile.bio || "";
-      avatarInput.value = profile.avatar || "";
-    }
+    displayNameInput.value = profile.displayName || "";
+    usernameInput.value = profile.username || "";
+    bioInput.value = profile.bio || "";
+    avatarInput.value = profile.avatar || "";
+  }
 
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          username: usernameInput.value,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        message.textContent = data.error || "Error updating profile.";
+        return;
+      }
 
       const profile = {
         displayName: displayNameInput.value,
@@ -62,8 +81,12 @@ import Layout from "../layouts/Layout.astro";
       localStorage.setItem("profile", JSON.stringify(profile));
 
       message.textContent = "Profile updated successfully!";
-    });
-  </script>
+    } catch (error) {
+      message.textContent = "Could not connect to the server.";
+    }
+  });
+</script>
+
 
   <style>
   .profile-page {

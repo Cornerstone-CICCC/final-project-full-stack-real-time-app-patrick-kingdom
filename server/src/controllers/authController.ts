@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import { findUserByUsername, createUser } from '../models/userModel.js';
+import { findUserByUsername, createUser, updateUsername } from '../models/userModel.js';
 
 const SALT_ROUNDS = 10;
 const MAX_USERNAME_LENGTH = 20;
@@ -68,4 +68,37 @@ export function me(req: Request, res: Response) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
   res.json({ username: req.session.username });
+}
+type ProfileBody = {
+  username?: string;
+};
+
+export function updateProfile(req: Request<object, object, ProfileBody>, res: Response) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not authenticated.' });
+  }
+
+  const username = req.body.username?.trim();
+
+  if (!username || username.length > MAX_USERNAME_LENGTH) {
+    return res.status(400).json({ error: 'Username must be 1–20 characters.' });
+  }
+
+  const existingUser = findUserByUsername(username);
+
+  if (existingUser && existingUser.id !== req.session.userId) {
+    return res.status(409).json({ error: 'Username already taken.' });
+  }
+
+  const updatedUser = updateUsername(req.session.userId, username);
+
+  if (!updatedUser) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  req.session.username = updatedUser.username;
+
+  res.json({
+    username: updatedUser.username,
+  });
 }

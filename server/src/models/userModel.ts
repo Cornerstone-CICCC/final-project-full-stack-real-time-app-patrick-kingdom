@@ -20,3 +20,22 @@ export function createUser(username: string, passwordHash: string): User {
   users.set(username.toLowerCase().trim(), user);
   return user;
 }
+export function updateUsername(userId: string, newUsername: string): User | null {
+  const username = newUsername.trim();
+
+  for (const [key, user] of users.entries()) {
+    if (user.id === userId) {
+      users.delete(key);
+
+      const updatedUser = {
+        ...user,
+        username,
+      };
+
+      users.set(username.toLowerCase(), updatedUser);
+      return updatedUser;
+    }
+  }
+
+  return null;
+}
