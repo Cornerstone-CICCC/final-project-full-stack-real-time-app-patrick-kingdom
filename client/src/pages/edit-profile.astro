@@ -29,14 +29,16 @@ import Layout from "../layouts/Layout.astro";
     </section>
   </main>
 
-  <script is:inline>
-  const form = document.getElementById("editProfileForm");
-  const message = document.getElementById("message");
+  <script>
+  import { SERVER_URL } from "../scripts/auth";
 
-  const displayNameInput = document.getElementById("displayName");
-  const usernameInput = document.getElementById("username");
-  const bioInput = document.getElementById("bio");
-  const avatarInput = document.getElementById("avatar");
+  const form = document.getElementById("editProfileForm") as HTMLFormElement;
+  const message = document.getElementById("message") as HTMLParagraphElement;
+
+  const displayNameInput = document.getElementById("displayName") as HTMLInputElement;
+  const usernameInput = document.getElementById("username") as HTMLInputElement;
+  const bioInput = document.getElementById("bio") as HTMLTextAreaElement;
+  const avatarInput = document.getElementById("avatar") as HTMLInputElement;
 
   const savedProfile = localStorage.getItem("profile");
 
@@ -53,7 +55,7 @@ import Layout from "../layouts/Layout.astro";
     event.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/profile", {
+      const response = await fetch(`${SERVER_URL}/api/auth/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
