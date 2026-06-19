@@ -7,6 +7,8 @@ import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: CLIENT_URL,
   credentials: true,       // ← required for cookies to cross origins
@@ -19,6 +21,8 @@ app.use(session({
   cookie: {
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24,  // 24 hours
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 }));
 
