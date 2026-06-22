@@ -75,7 +75,12 @@ if (shouldConnectSocket) {
 
   if (roomGroupsList instanceof HTMLElement) {
     socket.on("rooms:list", (rooms) => {
-      renderRoomGroups(rooms, roomGroupsList, roomGroupsStatus);
+      renderRoomGroups(rooms, roomGroupsList, roomGroupsStatus, (roomName) => {
+        if (roomGroupsStatus) {
+          roomGroupsStatus.textContent = "Creating room...";
+        }
+        socket.emit("rooms:create", { roomName });
+      });
     });
   }
 

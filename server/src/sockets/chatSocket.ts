@@ -16,6 +16,10 @@ type JoinPayload = {
   clientId?: unknown;
 };
 
+type CreateRoomPayload = {
+  roomName?: unknown;
+};
+
 type SendPayload = {
   text?: unknown;
 };
@@ -91,6 +95,15 @@ function isObjectPayload(payload: unknown): payload is Record<string, unknown> {
 
 export function registerChatHandlers(io: Server): void {
   io.on("connection", (socket) => {
+    socket.on("rooms:create", (payload: CreateRoomPayload) => {
+      if (!isObjectPayload(payload)) return;
+
+      const room = getOrCreateRoom(payload.roomName);
+      if (!room) return;
+
+      io.emit("rooms:list", getRooms());
+    });
+
     socket.on("chat:join", (payload: JoinPayload) => {
       if (!isObjectPayload(payload) || !isValidUsername(payload.username)) return;
 
