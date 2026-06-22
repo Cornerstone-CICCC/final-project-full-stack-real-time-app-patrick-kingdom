@@ -14,8 +14,26 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <script>
+      (function () {
+        const win = window as unknown as { __currentTheme?: string; __applyTheme?: (theme: string) => void };
+        const savedTheme = localStorage.getItem("theme");
+        const hour = new Date().getHours();
+        const isDay = hour >= 6 && hour < 18;
+        const theme = savedTheme === "day" || savedTheme === "night" ? savedTheme : (isDay ? "day" : "night");
+        document.documentElement.classList.add(`theme-${theme}`);
+        win.__currentTheme = theme;
+        win.__applyTheme = function (newTheme: string) {
+          if (newTheme !== "day" && newTheme !== "night") return;
+          document.documentElement.classList.remove("theme-day", "theme-night");
+          document.documentElement.classList.add(`theme-${newTheme}`);
+          localStorage.setItem("theme", newTheme);
+          win.__currentTheme = newTheme;
+        };
+      })();
+    </script>
   </head>
-  <body class="min-h-screen bg-white text-black">
+  <body class="min-h-screen">
     <slot />
   </body>
 </html>

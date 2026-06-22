@@ -1,1 +1,126 @@
 @import "tailwindcss";
+
+@layer base {
+  html.theme-day body {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #f8fbff 0%, #dbeafe 40%, #bfdbfe 100%);
+    color: #0f172a;
+  }
+
+  html.theme-night body {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0b1220 0%, #111d3d 45%, #5b21b6 100%);
+    color: #f8fafc;
+  }
+
+  html.theme-day #room-groups-status {
+    color: #0f172a;
+  }
+
+  html.theme-night #room-groups-status {
+    color: #f8fafc;
+  }
+
+  html.theme-day .room-status-divider {
+    border-color: #000;
+  }
+
+  html.theme-night .room-status-divider {
+    border-color: #f8fafc;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.theme-toggle-track {
+  @apply relative inline-flex h-6 w-12 items-center rounded-full bg-slate-500 transition-colors duration-200;
+}
+
+.theme-toggle-thumb {
+  @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200;
+}
+
+.theme-toggle-checkbox:checked + .theme-toggle-track {
+  @apply bg-sky-500;
+}
+
+.theme-toggle-checkbox:checked + .theme-toggle-track .theme-toggle-thumb {
+  transform: translateX(1.25rem);
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animate-slideInFromLeft {
+  animation: slideInFromLeft 0.8s ease-out forwards;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.animate-fadeInRight {
+  animation: fadeInRight 0.8s ease-out forwards;
+}
+
+
+.home-chat-preview-init {
+  opacity: 0;
+  transform: translateX(-40px);
+}
+
+.home-text-init {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.hero-text-centered {
+  text-align: center;
+}
+
+.hero-text-left {
+  text-align: left;
+}
+
+

@@ -26,12 +26,20 @@ export function renderRoomGroups(rooms: Room[], list: HTMLElement, status: HTMLE
 
     const preview = document.createElement("div");
     preview.className =
-      "grid aspect-[16/10] place-items-center border-b border-black bg-white text-black group-hover:bg-black group-hover:text-white";
+      "relative grid aspect-[16/10] place-items-center border-b border-black bg-white text-black group-hover:bg-black group-hover:text-white";
 
-    const initial = document.createElement("span");
-    initial.className = "text-6xl font-bold";
-    initial.textContent = room.name.trim().charAt(0).toUpperCase() || "?";
-    preview.appendChild(initial);
+    if (room.name.toLowerCase() === "general") {
+      const gif = document.createElement("img");
+      gif.src = "/general_idle.gif";
+      gif.alt = "General room preview animation";
+      gif.className = "h-full w-full object-cover";
+      preview.appendChild(gif);
+    } else {
+      const initial = document.createElement("span");
+      initial.className = "text-6xl font-bold";
+      initial.textContent = room.name.trim().charAt(0).toUpperCase() || "?";
+      preview.appendChild(initial);
+    }
 
     const description = document.createElement("p");
     description.className =

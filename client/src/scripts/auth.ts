@@ -30,7 +30,7 @@ export async function renderHomeAuthState() {
     authNav.innerHTML = username
       ? `<button id="account-btn" class="rounded border border-white bg-black px-4 py-2 text-white hover:bg-white hover:text-black">account</button>`
       : `
-        <a class="rounded border border-white px-4 py-2 hover:bg-white hover:text-black" href="/login">login</a>
+        <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/login">login</a>
         <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
       `;
   }

@@ -4,36 +4,50 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Chat">
-  <main class="min-h-screen bg-white text-black">
+  <main class="min-h-screen bg-transparent">
     <header class="border-b border-black bg-black px-5 py-6 text-white sm:px-8 lg:px-10">
       <div class="mx-auto flex max-w-7xl items-center justify-between">
         <a href="/" class="flex items-center">
           <span class="text-3xl font-bold leading-none sm:text-4xl">PAT</span>
         </a>
 
-        <button
-          class="grid size-20 place-items-center rounded-md border border-white text-white lg:hidden"
-          type="button"
-          aria-label="Open menu"
-        >
-          <span class="flex flex-col gap-2">
-            <span class="block h-1 w-10 rounded bg-white"></span>
-            <span class="block h-1 w-10 rounded bg-white"></span>
-            <span class="block h-1 w-10 rounded bg-white"></span>
-          </span>
-        </button>
-
-        <nav id="auth-nav" class="hidden items-center gap-3 text-lg font-semibold lg:flex">
-          <a class="rounded border border-white px-4 py-2 hover:bg-white hover:text-black" href="/login">login</a>
-          <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
-        </nav>
+        <div class="flex items-center gap-3">
+          <nav id="auth-nav" class="hidden lg:flex items-center gap-3 text-lg font-semibold">
+            <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/login">login</a>
+            <a class="rounded border border-white bg-white px-4 py-2 text-black hover:bg-black hover:text-white" href="/register">register</a>
+          </nav>
+          <button
+            class="grid size-20 place-items-center rounded-md border border-white text-white lg:hidden"
+            type="button"
+            aria-label="Open menu"
+          >
+            <span class="flex flex-col gap-2">
+              <span class="block h-1 w-10 rounded bg-white"></span>
+              <span class="block h-1 w-10 rounded bg-white"></span>
+              <span class="block h-1 w-10 rounded bg-white"></span>
+            </span>
+          </button>
+        </div>
       </div>
     </header>
 
-    <section class="mx-auto grid max-w-7xl gap-10 px-6 py-12 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] lg:items-center">
-      <div>
+    <div class="flex w-full justify-end px-4 pb-4 pt-4 sm:px-6 lg:px-8">
+      <label class="relative inline-flex h-8 w-15 cursor-pointer items-center rounded-full bg-slate-800/80 p-1 text-white transition hover:bg-slate-700/90" aria-label="Toggle theme mode">
+        <input id="theme-toggle" type="checkbox" class="peer sr-only" />
+        <span class="absolute inset-0 rounded-full bg-slate-700/80 transition-colors duration-200 peer-checked:bg-slate-900/90"></span>
+        <span class="relative z-8 flex w-full items-center justify-between px-0.5 text-slate-100">
+          <span class="grid h-5 w-5 place-items-center rounded-full bg-slate-800/90 text-[10px]">☼</span>
+          <span class="grid h-5 w-5 place-items-center rounded-full bg-slate-800/90 text-[10px]">⏾</span>
+        </span>
+        <span class="absolute left-1 top-1 h-6 w-6 rounded-full bg-sky-400 shadow transition-transform duration-200 peer-checked:translate-x-7"></span>
+      </label>
+    </div>
+
+    <section id="hero-section" class="mx-auto grid max-w-7xl gap-10 px-6 py-6 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] lg:items-center -mt-8">
+      <div class="flex justify-center lg:justify-end">
         <div
-          class="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-sm border border-black bg-white text-black"
+          id="home-chat-preview"
+          class="home-chat-preview-init relative grid w-full max-w-[780px] aspect-[16/10] place-items-center overflow-hidden rounded-sm border border-black bg-white text-black"
         >
             <a href="/chat" class="absolute inset-0 z-20 lg:hidden" aria-label="Open Chat room"></a>
             <div class="absolute inset-4 border border-black lg:hidden"></div>
@@ -48,27 +62,27 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <aside class="px-2 lg:px-0">
-        <div>
-          <h1 id="hero-greeting" class="text-5xl font-bold leading-tight lg:text-6xl">Hello, guest!</h1>
-          <p class="mt-6 text-3xl leading-relaxed lg:text-2xl">
-            Find a pat group that shares your interests. Make your own pat group. Get and trade Powers.
+        <div id="hero-text-group" class="home-text-init mx-auto max-w-3xl">
+          <h1 id="hero-greeting" class="text-5xl font-bold leading-tight lg:text-6xl opacity-0">Hello, guest!</h1>
+          <p id="hero-description" class="mt-6 text-3xl leading-relaxed lg:text-2xl opacity-0">
+            Find a PAT group that shares your interests. Make your own PAT group. Get and trade Powers.
             Play a multiplayer game. Design your own animated avatar character. Send stickers with custom text.
           </p>
         </div>
       </aside>
     </section>
 
-    <section class="mx-auto w-full max-w-7xl px-6 pb-16 sm:px-10 lg:pb-20">
-      <div class="mb-8 flex flex-col gap-3 border-b border-black pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <section id="rooms-section" class="mx-auto w-full max-w-7xl px-6 pb-16 sm:px-10 lg:pb-20 opacity-0">
+      <div class="mb-8 flex flex-col gap-3 border-b room-status-divider pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 class="mt-1 text-4xl font-bold leading-tight sm:text-5xl">pat rooms</h2>
+          <h2 class="mt-1 text-4xl font-bold leading-tight sm:text-5xl">PAT rooms</h2>
         </div>
-        <p id="room-groups-status" class="text-base text-black">Open a room and start chatting.</p>
+        <p id="room-groups-status" class="text-base">Open a room and start chatting.</p>
       </div>
 
       <div
         id="room-groups-list"
-        class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        class="grid gap-5 grid-cols-1 sm:grid-cols-2 w-full max-w-6xl mx-auto"
         aria-live="polite"
       ></div>
     </section>
@@ -90,8 +104,80 @@ import Layout from "../layouts/Layout.astro";
 });
 
   renderHomeAuthState();
+
+  const themeToggle = document.getElementById("theme-toggle") as HTMLInputElement | null;
+  const win = window as unknown as { __currentTheme?: string; __applyTheme?: (theme: string) => void };
+
+  function syncThemeToggle() {
+    const currentTheme = win.__currentTheme || localStorage.getItem("theme") || (new Date().getHours() >= 6 && new Date().getHours() < 18 ? "day" : "night");
+    if (themeToggle) {
+      themeToggle.checked = currentTheme === "night";
+    }
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener("change", () => {
+      const newTheme = themeToggle.checked ? "night" : "day";
+      win.__applyTheme?.(newTheme);
+      syncThemeToggle();
+    });
+  }
+
+  syncThemeToggle();
 </script>
 
 <script>
   import "../scripts/chat";
+</script>
+
+<script>
+
+  async function animateHomeEntrance() {
+    const greeting = document.getElementById("hero-greeting");
+    const description = document.getElementById("hero-description");
+    const chatPreview = document.getElementById("home-chat-preview");
+    const heroSection = document.getElementById("hero-section");
+    const roomsSection = document.getElementById("rooms-section");
+    const roomList = document.getElementById("room-groups-list");
+
+    if (greeting) {
+      greeting.classList.add("animate-fadeInUp");
+    }
+    if (chatPreview) {
+      chatPreview.classList.add("animate-fadeInRight");
+    }
+
+    // Step 2: Wait 1.5s and animate description
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    if (description) {
+      description.classList.add("animate-fadeInUp");
+    }
+
+    // Step 4: Fade in the rooms section after the chat preview appears
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    if (roomsSection) {
+      roomsSection.classList.add("animate-fadeIn");
+    }
+
+    // Step 6: Observe room cards and animate them when they appear
+    if (roomList) {
+      const observer = new MutationObserver(() => {
+        const cards = roomList.querySelectorAll("a");
+        cards.forEach((card) => {
+          if (!card.classList.contains("animate-fadeIn")) {
+            card.classList.add("animate-fadeIn");
+          }
+        });
+      });
+
+      observer.observe(roomList, { childList: true });
+    }
+  }
+
+  // Start animations when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", animateHomeEntrance);
+  } else {
+    animateHomeEntrance();
+  }
 </script>
