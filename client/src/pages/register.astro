@@ -3,13 +3,25 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Register — RealChat">
-  <main class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center p-6">
-    <div class="w-full border border-black p-8">
-      <h1 class="mb-2 text-2xl font-bold">Create account</h1>
-      <p class="mb-6 text-sm text-black">Join RealChat to start messaging</p>
+  <main class="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center p-6 bg-transparent">
 
-      <!-- Error message (hidden by default) -->
-      <p id="error-msg" class="mb-4 hidden border border-black bg-white px-3 py-2 text-sm text-black"></p>
+    <div class="flex w-full justify-end pb-4">
+      <label class="relative inline-flex h-8 w-15 cursor-pointer items-center rounded-full bg-slate-800/80 p-1 transition hover:bg-slate-700/90" aria-label="Toggle theme mode">
+        <input id="theme-toggle" type="checkbox" class="peer sr-only" />
+        <span class="absolute inset-0 rounded-full bg-slate-700/80 transition-colors duration-200 peer-checked:bg-slate-900/90"></span>
+        <span class="relative z-8 flex w-full items-center justify-between px-0.5 text-slate-100">
+          <span class="grid h-5 w-5 place-items-center rounded-full bg-slate-800/90 text-[10px]">☼</span>
+          <span class="grid h-5 w-5 place-items-center rounded-full bg-slate-800/90 text-[10px]">⏾</span>
+        </span>
+        <span class="absolute left-1 top-1 h-6 w-6 rounded-full bg-sky-400 shadow transition-transform duration-200 peer-checked:translate-x-7"></span>
+      </label>
+    </div>
+
+    <div class="w-full border border-black/20 p-8 bg-white/20 backdrop-blur-sm">
+      <h1 class="mb-2 text-2xl font-bold">Create account</h1>
+      <p class="mb-6 text-sm opacity-70">Join RealChat to start messaging</p>
+
+      <p id="error-msg" class="mb-4 hidden border border-black/30 bg-white/30 px-3 py-2 text-sm"></p>
 
       <form id="register-form" class="flex flex-col gap-4" novalidate>
         <div class="flex flex-col gap-1">
@@ -22,7 +34,7 @@ import Layout from "../layouts/Layout.astro";
             maxlength="20"
             autocomplete="username"
             placeholder="Choose a username (max 20 chars)"
-            class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
+            class="border border-black/30 px-3 py-2 bg-white/30 backdrop-blur-sm focus:outline-2 focus:outline-black placeholder:opacity-50"
           />
         </div>
 
@@ -35,7 +47,7 @@ import Layout from "../layouts/Layout.astro";
             required
             autocomplete="new-password"
             placeholder="At least 6 characters"
-            class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
+            class="border border-black/30 px-3 py-2 bg-white/30 backdrop-blur-sm focus:outline-2 focus:outline-black placeholder:opacity-50"
           />
         </div>
 
@@ -48,7 +60,7 @@ import Layout from "../layouts/Layout.astro";
             required
             autocomplete="new-password"
             placeholder="Repeat your password"
-            class="border border-black px-3 py-2 focus:outline-2 focus:outline-black"
+            class="border border-black/30 px-3 py-2 bg-white/30 backdrop-blur-sm focus:outline-2 focus:outline-black placeholder:opacity-50"
           />
         </div>
 
@@ -61,9 +73,9 @@ import Layout from "../layouts/Layout.astro";
         </button>
       </form>
 
-      <p class="mt-6 text-center text-sm text-black">
+      <p class="mt-6 text-center text-sm opacity-70">
         Already have an account?
-        <a href="/login" class="font-medium text-black underline hover:no-underline">Sign in</a>
+        <a href="/login" class="font-medium underline hover:no-underline">Sign in</a>
       </p>
     </div>
   </main>
@@ -75,8 +87,25 @@ import Layout from "../layouts/Layout.astro";
   const form = document.getElementById("register-form") as HTMLFormElement;
   const errorMsg = document.getElementById("error-msg") as HTMLParagraphElement;
   const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const themeToggle = document.getElementById("theme-toggle") as HTMLInputElement | null;
+  const win = window as unknown as { __currentTheme?: string; __applyTheme?: (theme: string) => void };
 
   redirectAuthenticated("/");
+
+  function syncThemeToggle() {
+    const currentTheme = win.__currentTheme || localStorage.getItem("theme") || "day";
+    if (themeToggle) themeToggle.checked = currentTheme === "night";
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener("change", () => {
+      const newTheme = themeToggle.checked ? "night" : "day";
+      win.__applyTheme?.(newTheme);
+      syncThemeToggle();
+    });
+  }
+
+  syncThemeToggle();
 
   function showError(message: string) {
     errorMsg.textContent = message;
@@ -96,7 +125,6 @@ import Layout from "../layouts/Layout.astro";
     const password = (document.getElementById("password") as HTMLInputElement).value.trim();
     const confirmPassword = (document.getElementById("confirm-password") as HTMLInputElement).value.trim();
 
-    // Client-side validation
     if (!username || !password || !confirmPassword) {
       showError("Please fill in all fields.");
       return;
