@@ -162,7 +162,7 @@ import Layout from "../layouts/Layout.astro";
     // Step 6: Observe room cards and animate them when they appear
     if (roomList) {
       const observer = new MutationObserver(() => {
-        const cards = roomList.querySelectorAll("a");
+        const cards = roomList.querySelectorAll("a, form");
         cards.forEach((card) => {
           if (!card.classList.contains("animate-fadeIn")) {
             card.classList.add("animate-fadeIn");
