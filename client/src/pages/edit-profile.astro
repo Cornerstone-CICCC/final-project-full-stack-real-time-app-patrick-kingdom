@@ -1,5 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL ?? "http://localhost:3000";
 ---
 
 <Layout title="Edit Profile">
@@ -38,7 +40,7 @@ import Layout from "../layouts/Layout.astro";
     </section>
   </main>
 
-  <script is:inline>
+  <script is:inline define:vars={{ SERVER_URL }}>
     const form = document.getElementById("editProfileForm");
     const message = document.getElementById("message");
 
@@ -49,7 +51,7 @@ import Layout from "../layouts/Layout.astro";
 
     async function loadProfile() {
       try {
-        const response = await fetch("http://localhost:3000/api/auth/me", {
+        const response = await fetch(`${SERVER_URL}/api/auth/me`, {
           credentials: "include",
         });
 
@@ -73,7 +75,7 @@ import Layout from "../layouts/Layout.astro";
       event.preventDefault();
 
       try {
-        const response = await fetch("http://localhost:3000/api/auth/profile", {
+        const response = await fetch(`${SERVER_URL}/api/auth/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
