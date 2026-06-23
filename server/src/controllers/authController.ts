@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import { findUserByUsername, createUser, updateUsername } from '../models/userModel.js';
+import {
+  findUserByUsername,
+  findUserById,
+  createUser,
+  updateProfile as updateUserProfile,
+} from '../models/userModel.js';
 
 const SALT_ROUNDS = 10;
 const MAX_USERNAME_LENGTH = 20;
@@ -11,6 +16,12 @@ type AuthBody = {
   password?: string;
 };
 
+type ProfileBody = {
+  username?: string;
+  bio?: string;
+  avatar?: string;
+};
+
 export async function register(req: Request<object, object, AuthBody>, res: Response) {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
@@ -18,9 +29,11 @@ export async function register(req: Request<object, object, AuthBody>, res: Resp
   if (!username || username.length > MAX_USERNAME_LENGTH) {
     return res.status(400).json({ error: 'Username must be 1–20 characters.' });
   }
+
   if (!password || password.length < MIN_PASSWORD_LENGTH) {
     return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   }
+
   if (findUserByUsername(username)) {
     return res.status(409).json({ error: 'Username already taken.' });
   }
@@ -30,7 +43,12 @@ export async function register(req: Request<object, object, AuthBody>, res: Resp
 
   req.session.userId = user.id;
   req.session.username = user.username;
-  res.status(201).json({ username: user.username });
+
+  res.status(201).json({
+    username: user.username,
+    bio: user.bio,
+    avatar: user.avatar,
+  });
 }
 
 export async function login(req: Request<object, object, AuthBody>, res: Response) {
@@ -42,18 +60,25 @@ export async function login(req: Request<object, object, AuthBody>, res: Respons
   }
 
   const user = findUserByUsername(username);
+
   if (!user) {
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
+
   if (!match) {
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
 
   req.session.userId = user.id;
   req.session.username = user.username;
-  res.json({ username: user.username });
+
+  res.json({
+    username: user.username,
+    bio: user.bio,
+    avatar: user.avatar,
+  });
 }
 
 export function logout(req: Request, res: Response) {
@@ -67,11 +92,19 @@ export function me(req: Request, res: Response) {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
-  res.json({ username: req.session.username });
+
+  const user = findUserById(req.session.userId);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  res.json({
+    username: user.username,
+    bio: user.bio,
+    avatar: user.avatar,
+  });
 }
-type ProfileBody = {
-  username?: string;
-};
 
 export function updateProfile(req: Request<object, object, ProfileBody>, res: Response) {
   if (!req.session.userId) {
@@ -79,6 +112,8 @@ export function updateProfile(req: Request<object, object, ProfileBody>, res: Re
   }
 
   const username = req.body.username?.trim();
+  const bio = req.body.bio?.trim() || "";
+  const avatar = req.body.avatar || "😀";
 
   if (!username || username.length > MAX_USERNAME_LENGTH) {
     return res.status(400).json({ error: 'Username must be 1–20 characters.' });
@@ -90,7 +125,11 @@ export function updateProfile(req: Request<object, object, ProfileBody>, res: Re
     return res.status(409).json({ error: 'Username already taken.' });
   }
 
-  const updatedUser = updateUsername(req.session.userId, username);
+  const updatedUser = updateUserProfile(req.session.userId, {
+    username,
+    bio,
+    avatar,
+  });
 
   if (!updatedUser) {
     return res.status(404).json({ error: 'User not found.' });
@@ -100,5 +139,7 @@ export function updateProfile(req: Request<object, object, ProfileBody>, res: Re
 
   res.json({
     username: updatedUser.username,
+    bio: updatedUser.bio,
+    avatar: updatedUser.avatar,
   });
 }

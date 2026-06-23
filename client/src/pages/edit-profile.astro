@@ -17,159 +17,182 @@ import Layout from "../layouts/Layout.astro";
         <label for="bio">Bio / Status</label>
         <textarea id="bio" name="bio" placeholder="Tell us about yourself..."></textarea>
 
-        <label for="avatar">Avatar URL</label>
-        <input id="avatar" name="avatar" type="text" placeholder="https://example.com/avatar.jpg" />
+        <label for="avatar">Avatar</label>
+        <select id="avatar" name="avatar">
+          <option value="😀">😀 Happy</option>
+          <option value="😎">😎 Cool</option>
+          <option value="🔥">🔥 Fire</option>
+          <option value="👑">👑 King</option>
+          <option value="💀">💀 Skull</option>
+          <option value="🧙">🧙 Wizard</option>
+          <option value="🐱">🐱 Cat</option>
+          <option value="🚀">🚀 Rocket</option>
+        </select>
 
         <button type="submit">Save Changes</button>
       </form>
 
       <p id="message"></p>
 
-      <a href="/chat">Back to Chat</a>
+      <a href="/">Back to Home</a>
     </section>
   </main>
 
-  <script>
-  import { SERVER_URL } from "../scripts/auth";
+  <script is:inline>
+    const form = document.getElementById("editProfileForm");
+    const message = document.getElementById("message");
 
-  const form = document.getElementById("editProfileForm") as HTMLFormElement;
-  const message = document.getElementById("message") as HTMLParagraphElement;
+    const displayNameInput = document.getElementById("displayName");
+    const usernameInput = document.getElementById("username");
+    const bioInput = document.getElementById("bio");
+    const avatarInput = document.getElementById("avatar");
 
-  const displayNameInput = document.getElementById("displayName") as HTMLInputElement;
-  const usernameInput = document.getElementById("username") as HTMLInputElement;
-  const bioInput = document.getElementById("bio") as HTMLTextAreaElement;
-  const avatarInput = document.getElementById("avatar") as HTMLInputElement;
+    async function loadProfile() {
+      try {
+        const response = await fetch("http://localhost:3000/api/auth/me", {
+          credentials: "include",
+        });
 
-  const savedProfile = localStorage.getItem("profile");
+        if (!response.ok) {
+          message.textContent = "Please login before editing your profile.";
+          return;
+        }
 
-  if (savedProfile) {
-    const profile = JSON.parse(savedProfile);
+        const profile = await response.json();
 
-    displayNameInput.value = profile.displayName || "";
-    usernameInput.value = profile.username || "";
-    bioInput.value = profile.bio || "";
-    avatarInput.value = profile.avatar || "";
-  }
-
-  form.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    try {
-      const response = await fetch(`${SERVER_URL}/api/auth/profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          username: usernameInput.value,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        message.textContent = data.error || "Error updating profile.";
-        return;
+        displayNameInput.value = profile.username || "";
+        usernameInput.value = profile.username || "";
+        bioInput.value = profile.bio || "";
+        avatarInput.value = profile.avatar || "😀";
+      } catch (error) {
+        message.textContent = "Could not load profile.";
       }
-
-      const profile = {
-        displayName: displayNameInput.value,
-        username: usernameInput.value,
-        bio: bioInput.value,
-        avatar: avatarInput.value,
-      };
-
-      localStorage.setItem("profile", JSON.stringify(profile));
-
-      message.textContent = "Profile updated successfully!";
-    } catch (error) {
-      message.textContent = "Could not connect to the server.";
     }
-  });
-</script>
 
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      try {
+        const response = await fetch("http://localhost:3000/api/auth/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            username: usernameInput.value,
+            bio: bioInput.value,
+            avatar: avatarInput.value,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          message.textContent = data.error || "Error updating profile.";
+          return;
+        }
+
+        localStorage.setItem(
+          "profile",
+          JSON.stringify({
+            displayName: displayNameInput.value,
+            username: data.username,
+            bio: data.bio,
+            avatar: data.avatar,
+          })
+        );
+
+        message.textContent = "Profile updated successfully!";
+      } catch (error) {
+        message.textContent = "Could not connect to the server.";
+      }
+    });
+
+    loadProfile();
+  </script>
 
   <style>
-  .profile-page {
-    min-height: 70vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: white;
-    color: black;
-    font-family: Arial, sans-serif;
-    padding: 40px 20px;
-  }
+    .profile-page {
+      min-height: 70vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      color: black;
+      font-family: Arial, sans-serif;
+      padding: 40px 20px;
+    }
 
-  .profile-card {
-    width: 100%;
-    max-width: 520px;
-    border: 2px solid black;
-    padding: 28px;
-    background: white;
-  }
+    .profile-card {
+      width: 100%;
+      max-width: 520px;
+      border: 2px solid black;
+      padding: 28px;
+      background: white;
+    }
 
-  h1 {
-    font-size: 42px;
-    margin-bottom: 25px;
-    font-weight: 800;
-  }
+    h1 {
+      font-size: 42px;
+      margin-bottom: 25px;
+      font-weight: 800;
+    }
 
-  label {
-    display: block;
-    margin-top: 16px;
-    margin-bottom: 6px;
-    font-weight: 700;
-  }
+    label {
+      display: block;
+      margin-top: 16px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
 
-  input,
-  textarea {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid black;
-    font-size: 16px;
-    box-sizing: border-box;
-    background: white;
-    color: black;
-  }
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid black;
+      font-size: 16px;
+      box-sizing: border-box;
+      background: white;
+      color: black;
+    }
 
-  textarea {
-    resize: vertical;
-    min-height: 95px;
-  }
+    textarea {
+      resize: vertical;
+      min-height: 95px;
+    }
 
-  button {
-    width: 100%;
-    margin-top: 24px;
-    padding: 14px;
-    border: 2px solid black;
-    border-radius: 999px;
-    background: black;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 700;
-  }
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      border: 2px solid black;
+      border-radius: 999px;
+      background: black;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+    }
 
-  button:hover {
-    background: white;
-    color: black;
-  }
+    button:hover {
+      background: white;
+      color: black;
+    }
 
-  #message {
-    text-align: center;
-    margin-top: 15px;
-    font-weight: 700;
-  }
+    #message {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: 700;
+    }
 
-  a {
-    display: block;
-    text-align: center;
-    margin-top: 20px;
-    color: black;
-    font-weight: 700;
-    text-decoration: underline;
-  }
-</style>
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: black;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+  </style>
 </Layout>

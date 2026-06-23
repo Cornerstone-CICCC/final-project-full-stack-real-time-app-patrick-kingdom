@@ -2,6 +2,8 @@ export interface Message {
   id: string;
   roomId: string;
   username: string;
+  avatar?: string;
+  bio?: string;
   text: string;
   createdAt: string;
 }

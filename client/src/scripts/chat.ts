@@ -84,20 +84,41 @@ if (shouldConnectSocket) {
     });
   }
 
-  getSessionUsername().then((authenticatedUsername) => {
-    const username = authenticatedUsername ?? generateGuestName();
-    const elements = getChatElements();
+  getSessionUsername().then(async (authenticatedUsername) => {
+  let username = authenticatedUsername ?? generateGuestName();
+  let avatar = "😀";
+  let bio = "";
 
-    if (elements) {
-      bindChatSession({
-        socket,
-        elements,
-        username,
-        clientId: getClientId(),
-        roomName,
-      });
+  try {
+    const response = await fetch(`${SERVER_URL}/api/auth/me`, {
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      const profile = await response.json();
+      username = profile.username ?? username;
+      avatar = profile.avatar ?? "😀";
+      bio = profile.bio ?? "";
     }
+  } catch {
+    avatar = "😀";
+    bio = "";
+  }
 
-    socket.connect();
-  });
+  const elements = getChatElements();
+
+  if (elements) {
+    bindChatSession({
+      socket,
+      elements,
+      username,
+      avatar,
+      bio,
+      clientId: getClientId(),
+      roomName,
+    });
+  }
+
+  socket.connect();
+});
 }

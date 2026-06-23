@@ -4,14 +4,19 @@ import { getOrCreateRoom, getRooms } from "../models/roomModel.js";
 
 const MAX_TEXT_LENGTH = 500;
 const MAX_NAME_LENGTH = 20;
+
 type OnlineUser = {
   username: string;
+  avatar: string;
+  bio: string;
   roomId: string;
   clientId: string | null;
 };
 
 type JoinPayload = {
   username?: unknown;
+  avatar?: unknown;
+  bio?: unknown;
   roomName?: unknown;
   clientId?: unknown;
 };
@@ -30,19 +35,21 @@ type UnsendPayload = {
 
 const onlineUsers = new Map<string, OnlineUser>();
 
-function getOnlineUsers(roomId: string): string[] {
-  const users = [...onlineUsers.values()]
+function getOnlineUsers(roomId: string) {
+  return [...onlineUsers.values()]
     .filter((user) => user.roomId === roomId)
-    .map((user) => user.username);
-
-  return [...new Set(users)].sort((a, b) => a.localeCompare(b));
+    .map((user) => ({
+      username: user.username,
+      avatar: user.avatar,
+      bio: user.bio,
+    }))
+    .sort((a, b) => a.username.localeCompare(b.username));
 }
 
 function emitOnlineUsers(io: Server, roomId: string): void {
   io.to(roomId).emit("users:online", getOnlineUsers(roomId));
 }
 
-// System notices are broadcast only, not stored in message history
 function emitNotice(io: Server, roomId: string, text: string): void {
   io.to(roomId).emit("chat:notice", {
     id: crypto.randomUUID(),
@@ -60,10 +67,18 @@ function isValidUsername(username: unknown): username is string {
 }
 
 function isValidClientId(clientId: unknown): clientId is string {
-  return typeof clientId === "string" && clientId.trim().length > 0 && clientId.trim().length <= 100;
+  return (
+    typeof clientId === "string" &&
+    clientId.trim().length > 0 &&
+    clientId.trim().length <= 100
+  );
 }
 
-function removePreviousClientConnections(io: Server, socket: Socket, clientId: string): void {
+function removePreviousClientConnections(
+  io: Server,
+  socket: Socket,
+  clientId: string
+): void {
   const affectedRoomIds = new Set<string>();
 
   for (const [socketId, user] of onlineUsers.entries()) {
@@ -109,9 +124,23 @@ export function registerChatHandlers(io: Server): void {
 
       const room = getOrCreateRoom(payload.roomName);
       if (!room) return;
-      const clientId = isValidClientId(payload.clientId) ? payload.clientId.trim() : null;
+
+      const clientId = isValidClientId(payload.clientId)
+        ? payload.clientId.trim()
+        : null;
+
+      const avatar =
+        typeof payload.avatar === "string" && payload.avatar.trim().length > 0
+          ? payload.avatar.trim()
+          : "😀";
+
+      const bio =
+        typeof payload.bio === "string"
+          ? payload.bio.trim()
+          : "";
 
       const previousUser = onlineUsers.get(socket.id);
+
       if (previousUser) {
         socket.leave(previousUser.roomId);
         emitOnlineUsers(io, previousUser.roomId);
@@ -123,8 +152,11 @@ export function registerChatHandlers(io: Server): void {
       }
 
       socket.join(room.id);
+
       onlineUsers.set(socket.id, {
         username: payload.username.trim(),
+        avatar,
+        bio,
         roomId: room.id,
         clientId,
       });
@@ -132,7 +164,7 @@ export function registerChatHandlers(io: Server): void {
       io.emit("rooms:list", getRooms());
       socket.emit("chat:joined", room);
       emitOnlineUsers(io, room.id);
-      emitNotice(io, room.id, `${payload.username.trim()} joined`);
+      emitNotice(io, room.id, `${avatar} ${payload.username.trim()} joined`);
     });
 
     socket.on("chat:send", (payload: unknown) => {
@@ -144,6 +176,8 @@ export function registerChatHandlers(io: Server): void {
       const message = addMessage({
         roomId: user.roomId,
         username: user.username,
+        avatar: user.avatar,
+        bio: user.bio,
         text: payload.text.trim(),
       });
 
@@ -151,7 +185,9 @@ export function registerChatHandlers(io: Server): void {
     });
 
     socket.on("chat:unsend", (payload: UnsendPayload) => {
-      if (!isObjectPayload(payload) || typeof payload.messageId !== "string") return;
+      if (!isObjectPayload(payload) || typeof payload.messageId !== "string") {
+        return;
+      }
 
       const user = onlineUsers.get(socket.id);
       if (!user) return;
@@ -163,7 +199,9 @@ export function registerChatHandlers(io: Server): void {
       });
 
       if (removed) {
-        io.to(user.roomId).emit("chat:unsent", { messageId: payload.messageId });
+        io.to(user.roomId).emit("chat:unsent", {
+          messageId: payload.messageId,
+        });
       }
     });
 
@@ -172,9 +210,10 @@ export function registerChatHandlers(io: Server): void {
     socket.on("disconnect", () => {
       const user = onlineUsers.get(socket.id);
       onlineUsers.delete(socket.id);
+
       if (user) {
         emitOnlineUsers(io, user.roomId);
-        emitNotice(io, user.roomId, `${user.username} left`);
+        emitNotice(io, user.roomId, `${user.avatar} ${user.username} left`);
       }
     });
   });
