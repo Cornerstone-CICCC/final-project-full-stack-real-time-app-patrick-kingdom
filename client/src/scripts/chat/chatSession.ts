@@ -20,11 +20,13 @@ interface ChatSessionOptions {
   socket: Socket;
   elements: ChatSessionElements;
   username: string;
+  avatar: string;
+  bio: string;
   clientId: string;
   roomName: string;
 }
 
-export function bindChatSession({ socket, elements, username, clientId, roomName }: ChatSessionOptions) {
+export function bindChatSession({ socket, elements, username, avatar, bio, clientId, roomName }: ChatSessionOptions) {
   const {
     currentRoom,
     currentUser,
@@ -70,7 +72,7 @@ export function bindChatSession({ socket, elements, username, clientId, roomName
     meta.className = "flex items-center gap-2 text-[10px] font-semibold text-slate-600";
 
     const author = document.createElement("span");
-    author.textContent = message.username;
+    author.textContent = `${message.avatar ?? "😀"} ${message.username}`;
     meta.appendChild(author);
 
     const timestamp = document.createElement("span");
@@ -140,16 +142,22 @@ export function bindChatSession({ socket, elements, username, clientId, roomName
     messageList.scrollTop = messageList.scrollHeight;
   }
 
-  function renderOnlineUsers(users: string[]) {
-    onlineUserList.innerHTML = "";
+  function renderOnlineUsers(users: { username: string; avatar?: string; bio?: string }[]) {
+  onlineUserList.innerHTML = "";
 
-    users.forEach((user) => {
-      const item = document.createElement("li");
-      item.className = "group relative rounded-[28px] rounded border border-black bg-white px-2 py-1 text-black";
-      item.textContent = user === username ? `${user} (you)` : user;
-      onlineUserList.appendChild(item);
-    });
-  }
+  users.forEach((user) => {
+    const item = document.createElement("li");
+    item.className = "group relative rounded-[28px] rounded border border-black bg-white px-2 py-1 text-black";
+
+    const name = user.username === username
+      ? `${user.avatar ?? "😀"} ${user.username} (you)`
+      : `${user.avatar ?? "😀"} ${user.username}`;
+
+    item.textContent = user.bio ? `${name} - ${user.bio}` : name;
+
+    onlineUserList.appendChild(item);
+  });
+}
 
   async function loadHistory() {
     if (!activeRoom) return;
@@ -171,7 +179,7 @@ export function bindChatSession({ socket, elements, username, clientId, roomName
     activeRoomLabel = `${roomName} Room`;
     currentRoom.textContent = activeRoomLabel;
     currentUser.textContent = `Joining as ${username}`;
-    socket.emit("chat:join", { username, roomName, clientId });
+    socket.emit("chat:join", { username, avatar, bio, roomName, clientId });
   }
 
   messageForm.addEventListener("submit", (event) => {

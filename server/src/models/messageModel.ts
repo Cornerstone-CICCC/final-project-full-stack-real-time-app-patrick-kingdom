@@ -1,10 +1,11 @@
-// In-memory message store (resets on server restart)
 const MAX_MESSAGES = 100;
 
 export type Message = {
   id: string;
   roomId: string;
   username: string;
+  avatar?: string;
+  bio?: string;
   text: string;
   createdAt: string;
 };
@@ -12,6 +13,8 @@ export type Message = {
 type MessageInput = {
   roomId?: string;
   username: string;
+  avatar?: string;
+  bio?: string;
   text: string;
 };
 
@@ -27,28 +30,42 @@ export function getMessages(roomId = "general"): Message[] {
   return messagesByRoom.get(roomId) ?? [];
 }
 
-export function addMessage({ roomId = "general", username, text }: MessageInput): Message {
+export function addMessage({
+  roomId = "general",
+  username,
+  avatar = "😀",
+  bio = "",
+  text,
+}: MessageInput): Message {
   const message = {
     id: crypto.randomUUID(),
     roomId,
     username,
+    avatar,
+    bio,
     text,
     createdAt: new Date().toISOString(),
   };
 
   const messages = getMessages(roomId);
   messages.push(message);
+
   if (messages.length > MAX_MESSAGES) {
     messages.shift();
   }
+
   messagesByRoom.set(roomId, messages);
 
   return message;
 }
 
-// Removes a message only if it belongs to the given username
-export function removeMessage({ roomId, messageId, username }: RemoveMessageInput): boolean {
+export function removeMessage({
+  roomId,
+  messageId,
+  username,
+}: RemoveMessageInput): boolean {
   const messages = getMessages(roomId);
+
   const index = messages.findIndex(
     (message) => message.id === messageId && message.username === username
   );
